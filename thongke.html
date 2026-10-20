@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Thống kê – Tháp Chăm AI</title>
+<style>
+:root{--bg:#f3f6f8;--card:#fff;--ink:#0d2a33;--muted:#5d7780;--line:#dbe5e9;--pri:#0f7c8a;--pri2:#e3f4f6;--warn:#b7791f;--ok:#2f855a;--bad:#c53030}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;font-size:14px}
+header{background:#0b3b44;color:#fff;padding:16px 20px}header h1{margin:0;font-size:18px}header p{margin:4px 0 0;color:#a9d6dc;font-size:12px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 12px;font-size:15px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,select,button{height:40px;border-radius:10px;border:1px solid var(--line);padding:0 12px;font:inherit}
+button{background:var(--pri);color:#fff;border:0;font-weight:700;cursor:pointer}button.ghost{background:var(--pri2);color:var(--pri)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.kpi{background:var(--pri2);border-radius:12px;padding:12px}.kpi b{display:block;font-size:24px;color:var(--pri)}.kpi span{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:600;font-size:12px}
+.bar{height:10px;border-radius:99px;background:#e6edf0;overflow:hidden;min-width:80px}.bar i{display:block;height:100%;background:var(--pri)}
+.bar.b i{background:#9bb7bf}
+.tag{display:inline-block;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:700}.tag.y{background:#e6f6ec;color:var(--ok)}.tag.n{background:#fdf2e3;color:var(--warn)}.tag.ai{background:#ece8fb;color:#5a3fc0}
+.muted{color:var(--muted);font-size:12px}#err{color:var(--bad);font-weight:600}
+.scroll{max-height:460px;overflow:auto}
+@media print{.noprint{display:none}body{background:#fff}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><h1>📊 Thống kê sử dụng – Tháp Chăm AI</h1><p>Minh chứng tác động: lượt dùng, câu hỏi gửi Trợ lý AI, kết quả Thám tử sử liệu, khảo sát trước/sau.</p></header>
+<main>
+  <div class="card noprint">
+    <div class="row">
+      <input id="ma" placeholder="Mã giáo viên" style="width:160px;text-transform:uppercase">
+      <select id="lop"><option value="">Tất cả lớp</option></select>
+      <button id="go">Xem thống kê</button>
+      <button id="csv" class="ghost" disabled>⬇ Tải câu hỏi (Excel/CSV)</button>
+      <button id="print" class="ghost" disabled>🖨 In / Lưu PDF</button>
+      <span id="err"></span>
+    </div>
+  </div>
+  <div id="out"></div>
+</main>
+<script src="config.js"></script>
+<script>
+const API=(window.THAPCHAM_CONFIG||{}).API_URL;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct=v=>Math.round((v||0)*100)+'%', num=v=>(v==null?'–':(+v).toFixed(2));
+const CLAIM={N1:'Tháp Chăm chủ yếu được xây bằng đá ong.',N2:'Thân tháp vươn cao, thu nhỏ dần khi lên cao.',N3:'Mô hình 3D là bản sao chính xác tháp Po Klong Garai.',N4:'Kalan thường chỉ có một cửa thật, các mặt khác là cửa giả.',N5:'Tháp Chăm là nơi ở của vua và hoàng tộc.',N6:'Cách kết dính gạch đã được giải thích hoàn toàn.',N7:'Mỹ Sơn được UNESCO công nhận Di sản văn hóa thế giới.',N8:'Vòm cửa tháp Chăm hình bán nguyệt tròn.',N9:'Kiến trúc Chăm chịu ảnh hưởng văn hóa Ấn Độ.',N10:'Chóp tháp và mái tháp là cùng một bộ phận.',N11:'Gopura là tháp chính đặt tượng thờ.',N12:'Mái tháp nhiều tầng, có tháp góc nhỏ.',A1:'Kalan có cửa thật ở cả bốn mặt như mô hình AI.',A2:'Rêu xanh trên mô hình là trang trí do người Chăm thiết kế.',A3:'Mô hình AI tạo từ ảnh thật luôn chính xác.',A4:'Trợ lý AI có thể sai nên luôn kèm nguồn.'};
+const KS=['Tự tin nhận biết bộ phận tháp Chăm','Kiểm tra lại thông tin do AI đưa ra','Hứng thú với di sản tháp Chăm','App giúp hiểu bài hơn (chỉ hỏi sau)'];
+let last=null;
+try{$('#ma').value=localStorage.getItem('tc_ma_gv')||''}catch(e){}
+async function load(){
+  $('#err').textContent='';const ma=$('#ma').value.trim().toUpperCase();if(!ma){$('#err').textContent='Nhập mã giáo viên.';return}
+  $('#go').disabled=true;$('#go').textContent='Đang tải…';
+  try{
+    const r=await fetch(API,{method:'POST',body:JSON.stringify({action:'stats',ma_gv:ma,loc_lop:$('#lop').value})}).then(r=>r.json());
+    if(!r.ok)throw new Error(r.error);
+    try{localStorage.setItem('tc_ma_gv',ma)}catch(e){}
+    last=r;render(r);$('#csv').disabled=false;$('#print').disabled=false;
+  }catch(e){$('#err').textContent=e.message}
+  $('#go').disabled=false;$('#go').textContent='Xem thống kê';
+}
+function render(r){
+  const sel=$('#lop'),cur=sel.value;
+  sel.innerHTML='<option value="">Tất cả lớp</option>'+r.theo_lop.map(l=>`<option ${l.lop===cur?'selected':''}>${esc(l.lop)}</option>`).join('');
+  const t=r.tong,tr=r.khao_sat.find(k=>k.loai==='truoc')||{},sa=r.khao_sat.find(k=>k.loai==='sau')||{};
+  const ksRow=(i)=>{const k='c'+(i+1),a=tr[k],b=sa[k];const d=(a!=null&&b!=null)?(b-a):null;
+    return `<tr><td>${KS[i]}</td><td>${num(a)}<div class="bar b"><i style="width:${(a||0)*20}%"></i></div></td><td>${num(b)}<div class="bar"><i style="width:${(b||0)*20}%"></i></div></td><td>${d==null?'–':`<b style="color:${d>=0?'var(--ok)':'var(--bad)'}">${d>=0?'+':''}${d.toFixed(2)}</b>`}</td></tr>`};
+  $('#out').innerHTML=`
+  <div class="card"><h2>Tổng quan ${cur?'· Lớp '+esc(cur):'· Tất cả lớp'}</h2><div class="kpis">
+    <div class="kpi"><b>${t.so_phien}</b><span>thiết bị / phiên học</span></div>
+    <div class="kpi"><b>${t.mo_app}</b><span>lượt mở app</span></div>
+    <div class="kpi"><b>${t.click_bo_phan}</b><span>lần khám phá bộ phận trên mô hình 3D</span></div>
+    <div class="kpi"><b>${t.cau_hoi}</b><span>câu hỏi gửi Trợ lý AI</span></div>
+    <div class="kpi"><b>${pct(t.ti_le_trong_tu_lieu)}</b><span>câu hỏi trả lời được từ tư liệu</span></div>
+    <div class="kpi"><b>${t.luot_tham_tu}</b><span>lượt kiểm chứng nhận định</span></div>
+    <div class="kpi"><b>${pct(t.ti_le_chon_dung)}</b><span>nhận định được xác định đúng</span></div>
+    <div class="kpi"><b>${pct(t.ti_le_phat_hien_loi_ai)}</b><span>phát hiện đúng lỗi của AI (A1–A4)</span></div>
+    <div class="kpi"><b>${num(t.diem_bang_chung_tb)}<small style="font-size:13px">/2</small></b><span>điểm bằng chứng trung bình (AI chấm)</span></div>
+  </div></div>
+  <div class="card"><h2>Khảo sát trước / sau (thang 1–5) · ${tr.n||0} phiếu trước, ${sa.n||0} phiếu sau</h2>
+    <table><tr><th>Nội dung</th><th>Trước</th><th>Sau</th><th>Thay đổi</th></tr>${[0,1,2].map(ksRow).join('')}
+    <tr><td>${KS[3]}</td><td>–</td><td>${num(sa.c4)}<div class="bar"><i style="width:${(sa.c4||0)*20}%"></i></div></td><td></td></tr></table></div>
+  <div class="card"><h2>Kết quả từng nhận định (Thám tử sử liệu)</h2><table><tr><th>Mã</th><th>Nhận định</th><th>Lượt</th><th>Xác định đúng</th><th>Điểm bằng chứng</th></tr>
+    ${r.nhan_dinh.map(n=>`<tr><td>${n.ma.startsWith('A')?'<span class="tag ai">'+esc(n.ma)+' · lỗi AI</span>':esc(n.ma)}</td><td>${esc(CLAIM[n.ma]||'')}</td><td>${n.luot}</td><td>${pct(n.ti_le_dung)}<div class="bar"><i style="width:${(n.ti_le_dung||0)*100}%"></i></div></td><td>${num(n.diem_tb)}</td></tr>`).join('')||'<tr><td colspan=5 class="muted">Chưa có dữ liệu</td></tr>'}</table></div>
+  <div class="card"><h2>Theo lớp</h2><table><tr><th>Lớp</th><th>Số thiết bị</th><th>Tổng lượt hoạt động</th></tr>${r.theo_lop.map(l=>`<tr><td>${esc(l.lop)}</td><td>${l.so_phien}</td><td>${l.luot}</td></tr>`).join('')}</table></div>
+  <div class="card"><h2>Điều học sinh học được về cách dùng AI (${r.y_kien.length})</h2><div class="scroll">${r.y_kien.map(y=>`<p>“${esc(y.y_kien)}” <span class="muted">– ${esc(y.lop)}</span></p>`).join('')||'<p class="muted">Chưa có ý kiến</p>'}</div></div>
+  <div class="card"><h2>Câu hỏi học sinh gửi Trợ lý AI (${r.cau_hoi.length} gần nhất)</h2><div class="scroll"><table><tr><th>Thời gian</th><th>Lớp</th><th>Câu hỏi</th><th>Trợ lý trả lời</th></tr>
+    ${r.cau_hoi.map(c=>`<tr><td class="muted">${new Date(c.tg).toLocaleString('vi-VN')}</td><td>${esc(c.lop)}</td><td>${esc(c.cau_hoi)}${c.bo_phan?'<br><span class="muted">đang xem: '+esc(c.bo_phan)+'</span>':''}</td><td>${c.trong_tu_lieu?'<span class="tag y">trong tư liệu</span>':'<span class="tag n">ngoài tư liệu</span>'} ${esc(c.tra_loi)}</td></tr>`).join('')||'<tr><td colspan=4 class="muted">Chưa có câu hỏi</td></tr>'}</table></div></div>`;
+}
+$('#go').onclick=load;$('#ma').addEventListener('keydown',e=>{if(e.key==='Enter')load()});$('#lop').onchange=()=>last&&load();
+$('#print').onclick=()=>print();
+$('#csv').onclick=()=>{if(!last)return;const rows=[['Thời gian','Lớp','Bộ phận đang xem','Câu hỏi','Trả lời','Trong tư liệu','Nguồn']].concat(last.cau_hoi.map(c=>[new Date(c.tg).toLocaleString('vi-VN'),c.lop,c.bo_phan,c.cau_hoi,c.tra_loi,c.trong_tu_lieu?'Có':'Không',c.nguon]));
+  const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='thapcham_cau_hoi.csv';a.click();};
+</script>
+</body>
+</html>
