@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Tháp Chăm AI</title>
+<style>
+:root{
+  --bg:#061014; --panel:rgba(6,24,30,.84); --line:rgba(91,239,255,.28);
+  --cyan:#68f6ff; --cyan2:#16cfe0; --txt:#e9fdff; --muted:#8db7be; --accent:#a6ff66; --warn:#ffd86b;
+}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--txt)}
+#app{position:fixed;inset:0;background:radial-gradient(circle at 50% 48%,rgba(19,93,104,.23),transparent 40%),linear-gradient(180deg,#071116 0%,#020608 100%)}
+#viewport{position:absolute;inset:0;touch-action:none} canvas{display:block;width:100%;height:100%}
+.topbar{position:absolute;left:18px;right:18px;top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none;z-index:10}
+.brand{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:16px;background:rgba(4,17,22,.72);backdrop-filter:blur(16px);box-shadow:0 12px 40px rgba(0,0,0,.28)}
+.brandIcon{width:38px;height:38px;border-radius:50%;border:1px solid rgba(104,246,255,.55);display:grid;place-items:center;color:var(--cyan);box-shadow:inset 0 0 18px rgba(104,246,255,.18),0 0 18px rgba(104,246,255,.08)}
+.brand strong{display:block;font-size:14px;letter-spacing:.08em}.brand small{display:block;margin-top:2px;color:var(--muted);font-size:11px}
+.quick{pointer-events:auto;display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+button,.btn{border:1px solid rgba(104,246,255,.25);background:rgba(6,25,31,.74);color:var(--txt);height:38px;padding:0 12px;border-radius:11px;cursor:pointer;transition:.18s ease;font-size:12px;font-weight:650;backdrop-filter:blur(12px)}
+button:hover{border-color:rgba(104,246,255,.7);background:rgba(12,47,56,.86);transform:translateY(-1px)}
+button.active{color:#001113;background:linear-gradient(135deg,var(--cyan),#9affcf);border-color:transparent;box-shadow:0 0 22px rgba(104,246,255,.22)}
+button.gold{border-color:rgba(255,216,107,.35);color:#ffe9a8}
+.leftPanel{position:absolute;left:18px;top:86px;width:256px;z-index:9;display:grid;gap:10px}
+.glass{background:var(--panel);border:1px solid var(--line);border-radius:16px;backdrop-filter:blur(16px);box-shadow:0 14px 40px rgba(0,0,0,.24)}
+.card{padding:13px}.cardTitle{font-size:10px;letter-spacing:.13em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}.grid2 button{width:100%;padding:0 7px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.grid3 button{width:100%;padding:0 6px}
+.switchRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px;color:#bfe5ea;font-size:12px}
+input[type=range]{width:100%;accent-color:#69eff8}.rangeHead{display:flex;justify-content:space-between;color:#bfe5ea;font-size:11px;margin:2px 0 7px}
+.status{font-size:11px;color:var(--muted);line-height:1.55}.status b{color:var(--cyan);font-weight:700}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#62ffa0;margin-right:7px;box-shadow:0 0 10px #62ffa0}
+.info{position:absolute;right:18px;top:86px;width:min(360px,calc(100vw - 36px));z-index:11;transform:translateX(115%);opacity:0;transition:.28s cubic-bezier(.2,.8,.2,1);pointer-events:none;max-height:min(82vh,880px)}
+.info.show{transform:translateX(0);opacity:1;pointer-events:auto}.infoHead{padding:15px 16px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px}.infoHead .tag{font-size:10px;color:#001417;background:var(--cyan);padding:4px 7px;border-radius:999px;font-weight:800;letter-spacing:.06em}.info h2{font-size:18px;margin:8px 0 0}
+.infoBody{padding:14px 16px 16px;overflow:auto;max-height:calc(82vh - 76px)}
+.infoBody p{font-size:12px;line-height:1.6;color:#b6d5da;margin:0 0 13px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px}.fact{padding:9px;border:1px solid rgba(104,246,255,.14);border-radius:11px;background:rgba(255,255,255,.025)}.fact.wide{grid-column:1/-1}.fact span{display:block;color:#719aa1;font-size:9px;text-transform:uppercase;letter-spacing:.08em}.fact b{display:block;margin-top:4px;font-size:12px;color:#dffcff;word-break:break-word}
+.note{margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,216,107,.07);border:1px solid rgba(255,216,107,.18);color:#d9c98c;font-size:10.5px;line-height:1.48}
+.close{width:30px;height:30px;padding:0;border-radius:9px}
+#connector{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:8;overflow:visible}#connector line{stroke:var(--cyan);stroke-width:1.2;stroke-dasharray:5 6;filter:drop-shadow(0 0 5px rgba(104,246,255,.7));opacity:0;transition:opacity .2s}#connector line.show{opacity:.75}
+.hint{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:9;padding:9px 13px;border:1px solid rgba(104,246,255,.16);border-radius:999px;background:rgba(4,18,23,.7);backdrop-filter:blur(10px);font-size:11px;color:#92bbc1;white-space:nowrap;transition:opacity .3s}.hint b{color:#dffcff}
+#loading{position:absolute;inset:0;display:grid;place-items:center;z-index:50;background:radial-gradient(circle at center,#0a242b,#020607);transition:opacity .5s}
+#loading.hide{opacity:0;pointer-events:none}.loaderBox{text-align:center;width:min(420px,84vw)}.logoLoad{font-size:34px;color:var(--cyan);filter:drop-shadow(0 0 18px rgba(104,246,255,.5));animation:pulse 1.4s ease-in-out infinite}.loaderTitle{font-size:16px;font-weight:800;margin:12px 0 6px}.loaderText{font-size:11px;color:var(--muted);margin-bottom:12px}.bar{height:4px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}.bar i{display:block;height:100%;width:20%;background:linear-gradient(90deg,var(--cyan2),var(--cyan),#b7ffdb);box-shadow:0 0 15px var(--cyan);animation:load 1.2s ease-in-out infinite}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:#8fbbc1}.badge:before{content:"";width:6px;height:6px;border-radius:50%;background:#76ffaf;box-shadow:0 0 10px #76ffaf}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;border:1px solid rgba(104,246,255,.18);background:rgba(255,255,255,.04);font-size:10px;color:#bfe5ea}
+#historyModal{position:absolute;inset:0;display:none;place-items:center;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);z-index:30;padding:20px}
+#historyModal.show{display:grid}.historyCard{width:min(820px,92vw);max-height:86vh;overflow:auto;padding:0}.historyHead{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.historyHead h2{margin:0;font-size:22px}.historyHead p{margin:6px 0 0;color:#a9d1d7;font-size:12px;line-height:1.55}.historyBody{padding:16px 18px 18px;display:grid;gap:12px}.historySection{padding:13px;border-radius:14px;border:1px solid rgba(104,246,255,.14);background:rgba(255,255,255,.03)}.historySection h3{margin:0 0 8px;font-size:14px;color:#dffcff}.historySection p,.historySection li{font-size:12px;line-height:1.62;color:#b7d6db}.historySection ul{padding-left:18px;margin:8px 0 0}.historyCols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.legend{display:grid;grid-template-columns:1fr;gap:7px}.legend .item{display:flex;gap:8px;align-items:flex-start;font-size:11px;color:#bedee3}.swatch{width:11px;height:11px;border-radius:50%;margin-top:2px}
+@keyframes load{0%{transform:translateX(-110%)}100%{transform:translateX(520%)}}
+@keyframes pulse{50%{opacity:.55;transform:scale(.96)}}
+@media(max-width:860px){.brand small{display:none}.brand{padding:8px 10px}.brandIcon{width:32px;height:32px}.leftPanel{top:auto;bottom:58px;left:10px;width:208px}.leftPanel .card:nth-child(4){display:none}.info{right:8px;left:8px;top:auto;bottom:54px;width:auto;transform:translateY(120%)}.info.show{transform:translateY(0)}.hint{bottom:10px;font-size:9.5px}.topbar{left:10px;right:10px;top:9px}.facts{grid-template-columns:repeat(2,1fr)}.historyCols{grid-template-columns:1fr}}
+
+.lessonVisual{margin:-2px 0 14px;border:1px solid rgba(104,246,255,.16);border-radius:14px;overflow:hidden;background:linear-gradient(180deg,rgba(104,246,255,.035),rgba(255,255,255,.015));position:relative;min-height:158px}
+.lessonVisual img{display:block;width:100%;height:210px;object-fit:contain;background:#f0ebe0}
+.lessonVisual .visualCap{position:absolute;left:10px;bottom:10px;padding:5px 8px;border-radius:999px;background:rgba(2,14,18,.82);border:1px solid rgba(104,246,255,.24);font-size:9px;letter-spacing:.08em;color:#c9f9fc;text-transform:uppercase;backdrop-filter:blur(8px)}
+.lessonIntro{padding:11px 12px;border-radius:12px;border:1px solid rgba(104,246,255,.12);background:rgba(255,255,255,.025);font-size:12px;line-height:1.65;color:#c5e2e6;margin-bottom:12px}
+.lessonGrid{display:grid;grid-template-columns:1fr;gap:8px}.lessonItem{padding:10px 11px;border-radius:12px;border:1px solid rgba(104,246,255,.12);background:rgba(255,255,255,.025)}.lessonItem span{display:block;font-size:9px;color:#76a6ad;text-transform:uppercase;letter-spacing:.09em;margin-bottom:5px}.lessonItem b{display:block;font-size:12px;line-height:1.55;color:#e0fbfd;font-weight:650}
+.selectionHint{margin-top:10px;padding:9px 10px;border-radius:11px;border:1px solid rgba(166,255,102,.16);background:rgba(166,255,102,.05);font-size:10px;line-height:1.5;color:#cce7bd}
+#diagramModal{position:absolute;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55);backdrop-filter:blur(7px);z-index:31;padding:20px}#diagramModal.show{display:grid}.diagramCard{width:min(1100px,96vw);height:min(92vh,1050px);display:flex;flex-direction:column;overflow:hidden}.diagramHead{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}.diagramHead h3{margin:0;font-size:15px}.diagramBody{flex:1;overflow:auto;background:#e9e3d9;padding:14px}.diagramContent{width:min(100%,1040px);margin:0 auto}.diagramOverview{display:grid;place-items:center}.diagramOverview>img{display:block;max-width:100%;height:auto;box-shadow:0 12px 45px rgba(0,0,0,.2);border-radius:14px}.diagramPartsSection{margin-top:16px;background:#071b20;border:1px solid rgba(74,236,247,.28);border-radius:18px;padding:14px;box-shadow:0 12px 35px rgba(0,0,0,.18)}.diagramPartsTitle{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 0 12px;color:#eaffff}.diagramPartsTitle h4{margin:0;font-size:17px}.diagramPartsTitle span{font-size:12px;color:#9bc8cc}.diagramPartsGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.diagramPartCard{background:#0b252b;border:1px solid rgba(119,246,255,.20);border-radius:14px;overflow:hidden;min-width:0}.diagramPartImgWrap{height:160px;background:#f2ede4;display:grid;place-items:center;overflow:hidden}.diagramPartImgWrap img{width:100%;height:100%;object-fit:contain;display:block}.diagramPartMeta{padding:10px 11px;color:#dffcff}.diagramPartMeta b{display:block;font-size:14px;margin-bottom:4px}.diagramPartMeta p{margin:0;color:#9bc8cc;font-size:12px;line-height:1.45}.diagramClickBadge{display:inline-flex;margin-top:7px;padding:4px 7px;border-radius:999px;background:#55edf4;color:#062127;font-size:10px;font-weight:900}.diagramLearnBadge{display:inline-flex;margin-top:7px;padding:4px 7px;border-radius:999px;background:#17383e;color:#bde9ec;font-size:10px;font-weight:800}@media(max-width:900px){.diagramPartsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.diagramPartsGrid{grid-template-columns:1fr}.diagramPartImgWrap{height:190px}}
+.partLegend{font-size:10px;color:#86abb1;line-height:1.5;margin-top:8px}
+@media(max-width:860px){.lessonVisual img{height:170px}.diagramCard{height:88vh}}
+
+</style>
+<link rel="stylesheet" href="chat.css" />
+<script src="lib/three.min.js"></script>
+<script>window.THREE||document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>')</script>
+<script src="lib/OrbitControls.js"></script>
+<script>(window.THREE&&THREE.OrbitControls)||document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>')</script>
+<script src="lib/GLTFLoader.js"></script>
+<script>(window.THREE&&THREE.GLTFLoader)||document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\/script>')</script>
+</head>
+<body>
+<div id="app">
+  <div id="viewport"></div>
+  <svg id="connector"><line id="connectorLine" x1="0" y1="0" x2="0" y2="0"/></svg>
+
+  <div class="topbar">
+    <div class="brand"><div class="brandIcon">◈</div><div><strong>THÁP CHĂM AI</strong><small>Học cụ 3D · Trợ lý AI kiểm chứng sử liệu</small></div></div>
+    <div class="quick">
+      <button id="btnTexture" class="active">Bản thật</button>
+      <button id="btnHolo">Hologram</button>
+      <button id="btnGridMode">Holo lưới</button>
+      <button id="btnAuto">Tự xoay</button>
+      <button id="btnDiagram">Sơ đồ chi tiết</button>
+      <button id="btnHistory" class="gold">Lịch sử tháp</button>
+      <button id="btnReset">Reset</button>
+      <button id="btnFull">Toàn màn hình</button>
+    </div>
+  </div>
+
+  <div class="leftPanel">
+    <div class="glass card">
+      <div class="cardTitle">Hiển thị</div>
+      <div class="switchRow"><span>Wireframe</span><button id="btnWire">Tắt</button></div>
+    </div>
+
+    <div class="glass card">
+      <div class="cardTitle">Phân rã cấu trúc</div>
+      <div class="rangeHead"><span>Hợp lại</span><span>Phân rã</span></div>
+      <input id="explodeRange" type="range" min="0" max="100" value="0" />
+      <div class="status" style="margin-top:10px"><span class="dot"></span><span id="componentStatus">Đang phân tích cụm hình học...</span></div>
+    </div>
+
+    <div class="glass card status">
+      <div class="cardTitle">Trạng thái mô hình</div>
+      <div><b id="triStat">—</b> tam giác</div>
+      <div><b id="vertStat">—</b> đỉnh</div>
+      <div><b id="compStat">—</b> cụm rời</div>
+      <div class="badge" style="margin-top:8px">Mô hình 3D dựng bằng AI · đã đối chiếu tư liệu</div>
+      <div class="legend" style="margin-top:10px">
+        <div class="item"><span class="swatch" style="background:#8effff"></span><span>Có thể click: cửa tháp, cầu thang, đế tháp, chóp tháp và 12 cột tháp. Vùng được chọn sẽ phát sáng.</span></div>
+      </div>
+      <div class="partLegend">Mô hình do AI dựng là <b>tháp Chăm tổng hợp</b>, không phải bản sao của một tháp cụ thể. Hãy hỏi Trợ lý AI và kiểm chứng bằng tư liệu.</div>
+    </div>
+  </div>
+
+  <aside id="info" class="glass info">
+    <div class="infoHead"><div><span id="zoneTag" class="tag">BÀI HỌC</span><h2 id="zoneTitle">Khám phá tháp Chăm</h2></div><button id="closeInfo" class="close">×</button></div>
+    <div class="infoBody">
+      <div class="lessonVisual"><img id="partImage" alt="Hình minh họa bộ phận tháp Chăm"/><div id="partImageCaption" class="visualCap">Hình minh họa chi tiết</div></div>
+      <div id="zoneDesc" class="lessonIntro">Click trực tiếp lên một bộ phận của tháp. Ứng dụng sẽ làm nổi đúng vùng đó và mở bài học ngắn gọn bằng hình ảnh tham chiếu.</div>
+      <div class="lessonGrid">
+        <div class="lessonItem"><span>Đặc điểm nhận biết</span><b id="learnRecognize">—</b></div>
+        <div class="lessonItem"><span>Vai trò trong kiến trúc</span><b id="learnRole">—</b></div>
+        <div class="lessonItem"><span>Vật liệu thường gặp</span><b id="learnMaterial">—</b></div>
+        <div class="lessonItem"><span>Cách xây dựng</span><b id="learnBuild">—</b></div>
+        <div class="lessonItem"><span>Kiến thức cần nhớ</span><b id="learnRemember">—</b></div>
+      </div>
+      <div class="selectionHint">Phần phát sáng trên mô hình là vùng nhận diện; ảnh phía trên là hình minh họa rõ của toàn bộ bộ phận để học sinh dễ quan sát hình dáng.</div>
+    </div>
+  </aside>
+
+  <div id="historyModal">
+    <div class="glass historyCard">
+      <div class="historyHead">
+        <div>
+          <div class="pill">TƯ LIỆU TÓM TẮT</div>
+          <h2>Lịch sử & kiến trúc tháp Chăm</h2>
+          <p>Phần này cung cấp mô tả ngắn gọn, dễ đọc về lịch sử, loại hình tháp và những địa điểm tiêu biểu còn tồn tại ở Việt Nam.</p>
+        </div>
+        <button id="closeHistory" class="close">×</button>
+      </div>
+      <div class="historyBody">
+        <div class="historySection">
+          <h3>1. Khái quát lịch sử</h3>
+          <p>Tháp Chăm là loại hình kiến trúc tôn giáo của vương quốc Champa, phát triển mạnh từ khoảng thế kỉ VII đến XVII. Nhiều tháp dùng để thờ thần Shiva, thần Vishnu, nữ thần Bhagavati/Po Nagar hoặc thờ các vị vua được thần thánh hóa sau khi qua đời.</p>
+        </div>
+        <div class="historyCols">
+          <div class="historySection">
+            <h3>2. Đặc điểm kiến trúc</h3>
+            <ul>
+              <li>Chủ yếu xây bằng <b>gạch nung màu đỏ</b>, mạch ghép rất khít.</li>
+              <li>Thân tháp thường vươn cao, thu nhỏ dần về phía trên.</li>
+              <li>Mặt trước có cửa đi vào; các mặt khác có thể có hốc vòm hoặc mảng trang trí cân đối.</li>
+              <li>Mái chia nhiều tầng, có gờ chỉ và cụm tháp góc nhỏ.</li>
+              <li>Đỉnh tháp có <b>chóp</b> hoặc bầu trang trí, tạo điểm nhấn thờ tự.</li>
+            </ul>
+          </div>
+          <div class="historySection">
+            <h3>3. Kỹ thuật xây dựng</h3>
+            <ul>
+              <li>Gạch được gia công tương đối đều, xếp khít để tạo khối vững chắc.</li>
+              <li>Nhiều nhà nghiên cứu cho rằng các viên gạch được liên kết bằng chất kết dính nguồn gốc khoáng/chất hữu cơ hoặc xử lí bề mặt đặc biệt.</li>
+              <li>Một số hoa văn được đục chạm trực tiếp sau khi khối tường đã hoàn thiện.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="historyCols">
+          <div class="historySection">
+            <h3>4. Các loại công trình trong quần thể</h3>
+            <ul>
+              <li><b>Kalan</b>: tháp chính, nơi đặt tượng hoặc biểu tượng thờ.</li>
+              <li><b>Gopura</b>: tháp/cổng dẫn vào khu thờ tự.</li>
+              <li><b>Kosagrha</b> (nhà lửa/nhà kho thiêng): công trình phụ trợ trong quần thể.</li>
+              <li>Trong thực tế còn có các nhóm tháp cổng, tháp hỏa, tháp bia hoặc công trình phụ tùy từng khu đền tháp.</li>
+            </ul>
+          </div>
+          <div class="historySection">
+            <h3>5. Địa điểm tiêu biểu hiện nay</h3>
+            <ul>
+              <li><b>Thánh địa Mỹ Sơn</b> – Quảng Nam.</li>
+              <li><b>Po Nagar</b> – Nha Trang, Khánh Hòa.</li>
+              <li><b>Po Klong Garai</b> – Phan Rang, Ninh Thuận.</li>
+              <li><b>Cụm tháp Dương Long, Bánh Ít</b> – Bình Định.</li>
+              <li><b>Po Rome</b> – Ninh Thuận.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="historySection">
+          <h3>6. Ghi chú cho mô hình đang xem</h3>
+          <p>Mô hình 3D hiện tại là một <b>tháp Chăm tổng hợp</b> do AI dựng từ ảnh tham chiếu, nên nó đại diện cho phong cách kiến trúc Chăm nói chung, không phải bản khảo cổ chính xác 100% của một tháp đơn lẻ cụ thể. Tuy vậy, bố cục cửa, thân, mái, chóp, gạch và hoa văn đều bám sát ngôn ngữ hình khối của tháp Chăm.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="diagramModal">
+    <div class="glass diagramCard">
+      <div class="diagramHead"><div><span class="pill">SƠ ĐỒ HỌC TẬP</span><h3>Chi tiết kiến trúc tháp Chăm</h3></div><button id="closeDiagram" class="close">×</button></div>
+      <div class="diagramBody"><div class="diagramContent">
+        <div class="diagramOverview"><img src="assets/overview.webp" alt="Sơ đồ chi tiết kiến trúc tháp Chăm"/></div>
+        <section class="diagramPartsSection">
+          <div class="diagramPartsTitle"><h4>Hình ảnh chi tiết các bộ phận</h4><span>Dùng lại đúng bộ ảnh minh họa đã có trong app</span></div>
+          <div class="diagramPartsGrid">
+            <article class="diagramPartCard"><div class="diagramPartImgWrap"><img data-part-image="door" alt="Hình chi tiết cửa tháp"></div><div class="diagramPartMeta"><b>Cửa tháp</b><p>Ảnh minh họa dùng cho hệ cửa; trong mô hình mỗi mặt có các cửa theo tầng.</p><span class="diagramClickBadge">CÓ THỂ CLICK</span></div></article>
+            <article class="diagramPartCard"><div class="diagramPartImgWrap"><img data-part-image="stairs" alt="Hình chi tiết cầu thang"></div><div class="diagramPartMeta"><b>Cầu thang cửa trước</b><p>Cụm bậc ở phần đáy dẫn lên cửa trước, tách riêng khỏi đế tháp.</p><span class="diagramClickBadge">CÓ THỂ CLICK</span></div></article>
+            <article class="diagramPartCard"><div class="diagramPartImgWrap"><img data-part-image="base" alt="Hình chi tiết đế tháp"></div><div class="diagramPartMeta"><b>Đế tháp / bệ tháp</b><p>Phần bệ giật cấp nâng đỡ toàn bộ công trình, không tính cầu thang.</p><span class="diagramClickBadge">CÓ THỂ CLICK</span></div></article>
+            <article class="diagramPartCard"><div class="diagramPartImgWrap"><img data-part-image="column" alt="Hình chi tiết cột tháp"></div><div class="diagramPartMeta"><b>Cột tháp</b><p>Ảnh chi tiết chung cho các cột/trụ trong mô hình.</p><span class="diagramClickBadge">CÓ THỂ CLICK</span></div></article>
+            <article class="diagramPartCard"><div class="diagramPartImgWrap"><img data-part-image="finial" alt="Hình chi tiết chóp tháp"></div><div class="diagramPartMeta"><b>Chóp tháp</b><p>Khối ở vị trí cao nhất, tách rõ khỏi các tầng mái phía dưới.</p><span class="diagramClickBadge">CÓ THỂ CLICK</span></div></article>
+            <article class="diagramPartCard"><div class="diagramPartImgWrap"><img data-part-image="body" alt="Hình chi tiết thân tháp"></div><div class="diagramPartMeta"><b>Thân tháp</b><p>Khối tường chính của công trình, dùng để học cấu trúc tổng thể.</p><span class="diagramLearnBadge">HÌNH HỌC TẬP</span></div></article>
+            <article class="diagramPartCard"><div class="diagramPartImgWrap"><img data-part-image="roof" alt="Hình chi tiết mái tháp"></div><div class="diagramPartMeta"><b>Mái tháp</b><p>Hệ tầng mái thu nhỏ dần khi lên cao.</p><span class="diagramLearnBadge">HÌNH HỌC TẬP</span></div></article>
+            <article class="diagramPartCard"><div class="diagramPartImgWrap"><img data-part-image="ornament" alt="Hình chi tiết hoa văn"></div><div class="diagramPartMeta"><b>Hoa văn trang trí</b><p>Các mảng trang trí ở vòm cửa, gờ và bề mặt kiến trúc.</p><span class="diagramLearnBadge">HÌNH HỌC TẬP</span></div></article>
+          </div>
+        </section>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="hint"><b>Chuột trái:</b> xoay · <b>Con lăn:</b> zoom · <b>Click lên tháp:</b> xem cửa, cột, hoa văn, mảng gạch</div>
+
+  <div id="loading"><div class="loaderBox"><div class="logoLoad">◈</div><div class="loaderTitle">ĐANG KHỞI TẠO THÁP CHĂM 3D</div><div id="loaderText" class="loaderText">Đang giải mã mô hình GLB...</div><div class="bar"><i></i></div></div></div>
+</div>
+
+<script>
+
+const GLB_URL = 'assets/thapcham.glb';
+const viewport = document.getElementById('viewport');
+const loading = document.getElementById('loading');
+const loaderText = document.getElementById('loaderText');
+window.addEventListener('error', (e)=>{
+  if(e?.message) console.error(e.message);
+});
+window.addEventListener('unhandledrejection', (e)=>{
+  console.error('Unhandled rejection', e.reason);
+  fatalLoadingError('Có lỗi khi khởi tạo mô hình 3D. Vui lòng mở lại file.');
+});
+
+function fatalLoadingError(message){
+  console.error(message);
+  if(loaderText) loaderText.textContent = message;
+  if(loading) loading.classList.remove('hide');
+}
+
+if(typeof THREE === 'undefined'){
+  fatalLoadingError('Không tải được thư viện 3D. Hãy giải nén TOÀN BỘ file zip (đủ thư mục lib, assets) rồi mở index.html, hoặc bật Internet.');
+  throw new Error('THREE is not loaded');
+}
+if(!THREE.OrbitControls || !THREE.GLTFLoader){
+  fatalLoadingError('Thiếu module điều khiển hoặc đọc GLB. Hãy mở lại file khi có kết nối mạng.');
+  throw new Error('OrbitControls/GLTFLoader missing');
+}
+
+const info = document.getElementById('info');
+const connectorLine = document.getElementById('connectorLine');
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x031015, 0.095);
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.01, 100);
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+if('outputColorSpace' in renderer && THREE.SRGBColorSpace){ renderer.outputColorSpace = THREE.SRGBColorSpace; } else if('outputEncoding' in renderer && THREE.sRGBEncoding){ renderer.outputEncoding = THREE.sRGBEncoding; }
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+viewport.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .07; controls.autoRotateSpeed = 1.0;
+controls.enablePan = true; controls.screenSpacePanning = true; controls.rotateSpeed = 0.95; controls.panSpeed = 1.05; controls.zoomSpeed = 1.0;
+controls.minDistance = .8; controls.maxDistance = 8;
+controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+renderer.domElement.addEventListener('contextmenu',(e)=>e.preventDefault());
+
+scene.add(new THREE.HemisphereLight(0x9cefff, 0x18100b, 1.45));
+const key = new THREE.DirectionalLight(0xffe0c3, 3.0); key.position.set(-2.4,3.2,-3.4); scene.add(key);
+const rim = new THREE.DirectionalLight(0x37eaff, 2.0); rim.position.set(3,2,2.5); scene.add(rim);
+const low = new THREE.PointLight(0x00dbe9, 12, 7, 2); low.position.set(0,-1.0,0); scene.add(low);
+
+const modelRoot = new THREE.Group(); scene.add(modelRoot);
+const effectsRoot = new THREE.Group(); scene.add(effectsRoot);
+let gltfScene, originalMesh, originalMaterial, holoMaterial, gridMaterial, activeMaterial;
+let modelBounds = new THREE.Box3(), modelSize = new THREE.Vector3(), modelCenter = new THREE.Vector3();
+let maxDim=2, modelHeight=2, frontZSign=-1;
+let faceComponent = null, componentFaces = [], componentCentroids = [], componentFaceCounts = [];
+let faceCenters = [], faceNormals = [], faceNeighbors = [];
+let faceSemanticGroupIndex = [];
+let semanticSubgroups = {};
+let explodedGroup = null, explodeBuilt=false, explodeAmount=0;
+let selectedOverlay = null, selectedOutline = null, marker = null, selectedWorldPoint = null, selectedExplodedChild = null, selectedExplodedOutline = null;
+let orbitTargetGoal = new THREE.Vector3();
+let referenceMaterial = null;
+let displayMode='texture', wireframe=false, selectionLevel='semantic';
+let semanticFaceLabels = [];
+let semanticGroups = { base:[], stairs:[], body:[], door:[], column:[], ornament:[], roof:[], finial:[] };
+let doorRegions = [];
+let columnRegions = [];
+let stairRegions = [];
+const COLUMN_TOTAL = 12;
+const COLUMN_LIST_TEXT = Array.from({length:COLUMN_TOTAL}, (_,i)=>`Cột tháp ${String(i+1).padStart(2,'0')}`).join(', ');
+const GLOBAL_GROUP_KEYS = new Set(['base','body','roof','finial']);
+// v21: ưu tiên vùng click theo vật thể lớn thực, đặc biệt cho chóp, cửa, cầu thang,
+// đế tháp và từng cột/trụ. Chi tiết nhỏ được nhập vào vật thể cha, không tạo vùng click liti.
+let majorParts = [], faceMajorPart = null, componentMajorPart = null;
+let majorPartStats = {significant:0,tiny:0};
+const NON_CLICKABLE_MAJOR_KEYS = new Set(['roof','body','ornament']);
+let ringGroup, particles, edgeLines;
+const PART_IMAGES = {"door": "assets/door.webp", "base": "assets/base.webp", "stairs": "assets/stairs.webp", "body": "assets/body.webp", "column": "assets/column.webp", "ornament": "assets/ornament.webp", "roof": "assets/roof.webp", "finial": "assets/finial.webp"};
+
+const DETAIL_DB = {
+  door:{tag:'CỬA THÁP',title:'Cửa tháp',desc:'Mỗi mặt tháp có 3 cửa theo ba tầng: dưới, giữa và trên. Khi click đúng một cửa, ứng dụng chỉ làm sáng đúng hệ cửa đó gồm ô cửa, khung cửa và vòm cửa.',recognize:'Nằm trên từng mặt tháp, xếp theo ba tầng từ dưới lên trên. Mỗi cửa gồm ô cửa, khung cửa và phần vòm nhọn phía trên.',role:'Là lối vào hoặc cửa giả mang tính biểu tượng, đồng thời tạo nhịp dọc cho mặt đứng tháp.',material:'Gạch nung đỏ; một số chi tiết có thể phối đá ở ngưỡng, khung hoặc chi tiết chạm.',build:'Cửa được tổ chức theo trục đối xứng, có ô cửa ở giữa, khung bao xung quanh và phần vòm trang trí phía trên.',remember:'Khi chọn cửa, vùng sáng chỉ nằm đúng hệ cửa, tuyệt đối không lấy cầu thang phía dưới.',imageKey:'door'},
+  base:{tag:'CHÂN ĐẾ',title:'Chân đế / bệ tháp',desc:'Chân đế là phần thấp nhất nâng đỡ toàn bộ công trình. Đây là lớp nền kiến trúc nằm bên dưới thân tháp.',recognize:'Có nhiều lớp giật cấp, bệ rộng, chạy quanh phần đáy của tháp.',role:'Giữ cho công trình vững chắc, nâng thân tháp lên cao và tạo sự bề thế.',material:'Chủ yếu là gạch nung; có nơi kết hợp đá ở nền, bậc hoặc các chi tiết mép bệ.',build:'Được xây thành nhiều lớp giật cấp từ to đến nhỏ, giúp truyền lực xuống nền đất.',remember:'Chân đế là toàn bộ phần bệ ở phía dưới, khác với bậc thang là lối đi lên cửa.',imageKey:'base'},
+  stairs:{tag:'CẦU THANG',title:'Cầu thang cửa trước',desc:'Cầu thang là lối dẫn từ đế tháp lên cửa trước của tháp. Đây là cụm bậc ở phần đáy, gắn với cửa trước.',recognize:'Là cụm bậc đi lên, nằm ở mặt trước, tách khỏi phần đế và bám theo trục cửa trước.',role:'Dẫn lối tiếp cận cửa trước và nhấn mạnh trục chính của mặt trước.',material:'Gạch hoặc đá tùy di tích, giai đoạn xây dựng và trùng tu.',build:'Các bậc được xếp theo cấp độ tăng dần, thường có hai bên thành bậc hoặc gờ trang trí.',remember:'Cửa có cầu thang là cửa trước. Cầu thang chỉ là cụm bậc ở đáy, khác với toàn bộ đế tháp.',imageKey:'stairs'},
+  body:{tag:'THÂN THÁP',title:'Thân tháp',desc:'Thân tháp là phần khối chính của công trình, nằm giữa chân đế và mái tháp.',recognize:'Là khối tường lớn, đứng, cao, gồm nhiều mảng tường gạch, có các trụ ốp và hốc trang trí.',role:'Bao bọc không gian bên trong và quyết định hình dáng chính của tháp.',material:'Gạch nung đỏ xếp khít thành các mảng tường lớn.',build:'Thân tháp được xây bằng các lớp gạch xếp chặt, kết hợp trụ, gờ và mảng tường để tạo nhịp mặt đứng.',remember:'Thân tháp là khối trung tâm lớn, còn cửa, trụ, hoa văn và mái là các bộ phận gắn trên hoặc chuyển tiếp từ thân.',imageKey:'body'},
+  column:{tag:'CỘT / TRỤ',title:'Cột tháp',desc:'Cột tháp là các dải kiến trúc đứng nổi trên mặt tường hoặc ở các góc của thân tháp. Khi click, ứng dụng chỉ làm sáng đúng cột đang chọn.',recognize:'Có dạng thẳng đứng, chạy theo chiều cao và thường nằm gần các góc hoặc kề bên hệ cửa.',role:'Chia nhịp mặt đứng, làm rõ cấu trúc và tạo cảm giác vươn cao cho tháp.',material:'Gạch nung đỏ, tạo hình bằng các khối gạch nhô và các gờ chỉ.',build:'Cột thường gồm chân cột, thân cột và đầu cột.',remember:'Tổng cộng mô hình học tập quy ước 12 cột tháp. Vùng sáng chỉ được nằm đúng cột, không lan sang cửa, đế hoặc nền.',imageKey:'column'},
+  ornament:{tag:'HOA VĂN',title:'Hoa văn',desc:'Hoa văn là các chi tiết trang trí được tạo nổi hoặc lõm trên bề mặt tháp.',recognize:'Thường xuất hiện ở vòm cửa, ô trang trí, mảng lá đề, gờ nhỏ hoặc các chi tiết chạm nổi.',role:'Tăng vẻ đẹp thẩm mỹ, tạo điểm nhấn nghệ thuật và thể hiện phong cách kiến trúc Chăm.',material:'Thường là gạch nung được tạo hình; một số chi tiết có thể phối đá hoặc vật liệu chạm khắc khác.',build:'Được tạo bằng các khối trang trí gắn vào bề mặt hoặc gia công trực tiếp trên bộ phận kiến trúc.',remember:'Hoa văn là phần trang trí. Khi chọn hoa văn, không nên làm sáng lan sang cả cửa, thân hoặc mái.',imageKey:'ornament'},
+  roof:{tag:'MÁI THÁP',title:'Mái tháp',desc:'Mái tháp là phần nằm phía trên thân tháp, gồm các tầng mái thu nhỏ dần khi lên cao.',recognize:'Có nhiều tầng giật cấp, các gờ mái ngang và các khối góc nhỏ.',role:'Làm phần chuyển tiếp từ thân lên chóp, tạo dáng vươn cao cho công trình.',material:'Chủ yếu là gạch nung đỏ.',build:'Được xây thành các tầng mái nhỏ dần, mỗi tầng lùi vào so với tầng dưới.',remember:'Mái là cả hệ mái phía trên thân, không phải phần chóp ở trên cùng.',imageKey:'roof'},
+  finial:{tag:'CHÓP THÁP',title:'Chóp tháp',desc:'Chóp tháp là phần cao nhất của công trình, nằm ở đỉnh trên cùng.',recognize:'Nằm đúng đỉnh tháp, thường có dạng bầu, núm hoặc khối thuôn nhọn.',role:'Kết thúc trục đứng của công trình và tạo điểm nhấn trên đỉnh tháp.',material:'Có thể bằng gạch, đá hoặc khối trang trí hoàn thiện tùy từng tháp.',build:'Được đặt trên tầng mái trên cùng bằng một đế nhỏ, sau đó hoàn thiện khối chóp ở trung tâm.',remember:'Chóp là bộ phận cao nhất và phải tách rõ khỏi mái.',imageKey:'finial'}
+};
+
+function base64ToArrayBuffer(base64){
+  const bin=atob(base64), len=bin.length, bytes=new Uint8Array(len);
+  for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+loaderText.textContent='Đang nạp thư viện 3D và giải mã mô hình GLB...';
+let bootTimeout = setTimeout(()=>{ if(!window.__READY) fatalLoadingError('Mô hình đang tải chậm. Hãy chờ thêm hoặc kiểm tra kết nối mạng.'); }, 45000);
+const loader = new THREE.GLTFLoader();
+function loadGLB(onLoad, onProgress, onError){
+  const viaScript=()=>{
+    loaderText.textContent='Đang nạp mô hình 3D (chế độ ngoại tuyến)...';
+    const sc=document.createElement('script'); sc.src='assets/thapcham.glb.js';
+    sc.onload=()=>{ try{ loader.parse(base64ToArrayBuffer(window.GLB_BASE64),'',onLoad,onError); }catch(e){ onError(e); } };
+    sc.onerror=()=>onError(new Error('Không tìm thấy thư mục assets. Hãy giải nén TOÀN BỘ file zip rồi mở index.html trong thư mục đó.'));
+    document.head.appendChild(sc);
+  };
+  if(location.protocol==='file:') return viaScript();
+  loader.load(GLB_URL, onLoad, onProgress, ()=>viaScript());
+}
+loadGLB((gltf)=>{
+  gltfScene=gltf.scene; modelRoot.add(gltfScene);
+  originalMesh=null;
+  gltfScene.traverse(o=>{ if(o.isMesh && !originalMesh){ originalMesh=o; } });
+  if(!originalMesh) throw new Error('Không tìm thấy mesh trong GLB');
+  originalMaterial=originalMesh.material;
+  originalMesh.castShadow=false; originalMesh.receiveShadow=false;
+
+  modelBounds.setFromObject(gltfScene); modelBounds.getCenter(modelCenter); modelBounds.getSize(modelSize);
+  modelRoot.position.sub(modelCenter);
+  maxDim=Math.max(modelSize.x,modelSize.y,modelSize.z); modelHeight=modelSize.y;
+  controls.target.set(0,0,0);
+  orbitTargetGoal.copy(controls.target);
+  camera.position.set(0, modelHeight*.03, -maxDim*1.78);
+  controls.update();
+
+  holoMaterial=new THREE.MeshStandardMaterial({color:0x66f6ff,emissive:0x00b8c7,emissiveIntensity:1.25,metalness:.22,roughness:.22,transparent:true,opacity:.66,side:THREE.DoubleSide,depthWrite:false});
+  gridMaterial=new THREE.MeshStandardMaterial({color:0x59f3ff,emissive:0x00d7ff,emissiveIntensity:1.4,metalness:0.08,roughness:0.25,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false});
+  activeMaterial=originalMaterial;
+
+  buildEffects();
+  analyzeComponents();
+  precomputeFaceData();
+  buildSemanticGroups();
+  buildDoorRegions();
+  buildColumnRegions();
+  buildStairRegions();
+  buildMajorParts();
+  window.__CLICK_DEBUG={doors:doorRegions.length,columns:columnRegions.length,stairs:stairRegions.length,majorParts:majorParts.length};
+  console.info('[ClickDebug]',window.__CLICK_DEBUG);
+  buildEdgeLines();
+  setStats();
+  applyDisplayMode();
+  loading.classList.add('hide');
+  setTimeout(()=>loading.remove(),600);
+  window.__READY=true; clearTimeout(bootTimeout);
+}, (xhr)=>{ if(xhr&&xhr.total){ loaderText.textContent='Đang tải mô hình 3D... '+Math.round(xhr.loaded/xhr.total*100)+'%'; } }, (err)=>{
+  console.error(err); fatalLoadingError('Không thể đọc mô hình: '+(err&&err.message?err.message:'Lỗi không xác định')); clearTimeout(bootTimeout);
+});
+
+function setStats(){
+  const geo=originalMesh.geometry;
+  const tri=geo.index ? geo.index.count/3 : geo.attributes.position.count/3;
+  document.getElementById('triStat').textContent=Math.round(tri).toLocaleString('vi-VN');
+  document.getElementById('vertStat').textContent=geo.attributes.position.count.toLocaleString('vi-VN');
+  document.getElementById('compStat').textContent=componentFaces.length.toLocaleString('vi-VN');
+  document.getElementById('componentStatus').textContent=`${componentFaces.length.toLocaleString('vi-VN')} cụm rời gốc → ${majorParts.length.toLocaleString('vi-VN')} bộ phận lớn · ${doorRegions.length} vùng cửa · ${columnRegions.length} vùng cột`;
+}
+
+function analyzeComponents(){
+  const geo=originalMesh.geometry, pos=geo.attributes.position, idx=geo.index;
+  const triCount=idx ? idx.count/3 : pos.count/3;
+  if(!idx){
+    faceComponent=new Int32Array(triCount); componentFaces=[];
+    for(let f=0;f<triCount;f++){faceComponent[f]=f;componentFaces.push([f]);}
+    componentCentroids=componentFaces.map(()=>new THREE.Vector3()); componentFaceCounts=componentFaces.map(()=>1); return;
+  }
+  const n=pos.count, parent=new Int32Array(n), rank=new Uint8Array(n);
+  for(let i=0;i<n;i++) parent[i]=i;
+  const find=(x)=>{while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x];}return x;};
+  const union=(a,b)=>{a=find(a);b=find(b);if(a===b)return;if(rank[a]<rank[b])parent[a]=b;else if(rank[a]>rank[b])parent[b]=a;else{parent[b]=a;rank[a]++;}};
+  for(let f=0;f<triCount;f++){const a=idx.getX(f*3),b=idx.getX(f*3+1),c=idx.getX(f*3+2);union(a,b);union(b,c);union(c,a);}  
+  const rootToComp=new Map(); componentFaces=[]; faceComponent=new Int32Array(triCount); const sums=[]; const counts=[];
+  for(let f=0;f<triCount;f++){
+    const a=idx.getX(f*3), root=find(a); let ci=rootToComp.get(root);
+    if(ci===undefined){ci=componentFaces.length;rootToComp.set(root,ci);componentFaces.push([]);sums.push(new THREE.Vector3());counts.push(0);}
+    faceComponent[f]=ci; componentFaces[ci].push(f);
+    const ia=idx.getX(f*3),ib=idx.getX(f*3+1),ic=idx.getX(f*3+2);
+    const cx=(pos.getX(ia)+pos.getX(ib)+pos.getX(ic))/3, cy=(pos.getY(ia)+pos.getY(ib)+pos.getY(ic))/3, cz=(pos.getZ(ia)+pos.getZ(ib)+pos.getZ(ic))/3;
+    sums[ci].add(new THREE.Vector3(cx,cy,cz)); counts[ci]++;
+  }
+  componentCentroids=sums.map((s,i)=>s.multiplyScalar(1/Math.max(1,counts[i])));
+  componentFaceCounts=counts;
+}
+
+function precomputeFaceData(){
+  const geo=originalMesh.geometry, pos=geo.attributes.position, idx=geo.index;
+  const triCount=idx ? idx.count/3 : pos.count/3;
+  faceCenters=new Array(triCount); faceNormals=new Array(triCount); faceNeighbors=new Array(triCount);
+  const a=new THREE.Vector3(), b=new THREE.Vector3(), c=new THREE.Vector3(), ab=new THREE.Vector3(), ac=new THREE.Vector3();
+  const vertexToFaces = new Map();
+  for(let f=0;f<triCount;f++){
+    const ia=idx ? idx.getX(f*3) : f*3, ib=idx ? idx.getX(f*3+1) : f*3+1, ic=idx ? idx.getX(f*3+2) : f*3+2;
+    a.set(pos.getX(ia),pos.getY(ia),pos.getZ(ia)); b.set(pos.getX(ib),pos.getY(ib),pos.getZ(ib)); c.set(pos.getX(ic),pos.getY(ic),pos.getZ(ic));
+    faceCenters[f]=new THREE.Vector3().add(a).add(b).add(c).multiplyScalar(1/3);
+    ab.subVectors(b,a); ac.subVectors(c,a); faceNormals[f]=new THREE.Vector3().crossVectors(ab,ac).normalize();
+    faceNeighbors[f] = new Set();
+    for(const vi of [ia,ib,ic]){
+      if(!vertexToFaces.has(vi)) vertexToFaces.set(vi, []);
+      vertexToFaces.get(vi).push(f);
+    }
+  }
+  for(const arr of vertexToFaces.values()){
+    for(let i=0;i<arr.length;i++){
+      for(let j=i+1;j<arr.length;j++){
+        faceNeighbors[arr[i]].add(arr[j]);
+        faceNeighbors[arr[j]].add(arr[i]);
+      }
+    }
+  }
+}
+
+function createFaceGeometry(faceIds){
+  const src=originalMesh.geometry, idx=src.index, pos=src.attributes.position, nor=src.attributes.normal, uv=src.attributes.uv;
+  const p=[], n=[], u=[];
+  for(const f of faceIds){
+    for(let k=0;k<3;k++){
+      const vi=idx ? idx.getX(f*3+k) : f*3+k;
+      p.push(pos.getX(vi),pos.getY(vi),pos.getZ(vi));
+      if(nor)n.push(nor.getX(vi),nor.getY(vi),nor.getZ(vi));
+      if(uv)u.push(uv.getX(vi),uv.getY(vi));
+    }
+  }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
+  if(n.length)g.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));else g.computeVertexNormals();
+  if(u.length)g.setAttribute('uv',new THREE.Float32BufferAttribute(u,2));
+  g.computeBoundingBox();
+  return g;
+}
+
+function createComponentGeometry(ci){
+  return createFaceGeometry(componentFaces[ci]||[]);
+}
+
+function explodeDirectionForPiece(key, center){
+  const d=center.clone();
+  d.y*=0.55;
+  if(d.lengthSq()<1e-6) d.set(0,0,1);
+  const radial = new THREE.Vector3(d.x, 0, d.z);
+  if(radial.lengthSq()<1e-6) radial.set(0,0,1);
+  radial.normalize();
+  d.copy(radial.add(new THREE.Vector3(0, Math.sign(center.y||1)*0.28, 0)));
+  if(key==='base') d.add(new THREE.Vector3(0,-1.75,0));
+  if(key==='stairs') d.add(new THREE.Vector3(0,-0.95,0));
+  if(key==='door') d.add(radial.clone().multiplyScalar(0.35));
+  if(key==='column') d.add(radial.clone().multiplyScalar(0.55));
+  if(key==='roof') d.add(new THREE.Vector3(0,1.2,0));
+  if(key==='finial') d.add(new THREE.Vector3(0,2.4,0));
+  return d.normalize();
+}
+
+function shouldIncludeExplodedSubgroup(key, g){
+  if(!g || !g.faces?.length) return false;
+  const bounds=g.bounds || computeBoundsForFaces(g.faces);
+  const sx=(bounds.nmax.x-bounds.nmin.x), sy=(bounds.nmax.y-bounds.nmin.y), sz=(bounds.nmax.z-bounds.nmin.z);
+  if(key==='ornament') return false; // bỏ hoàn toàn chi tiết nhỏ liti
+  if(key==='door') return g.size>=80 && sy>=0.16 && Math.max(sx,sz)>=0.14;
+  if(key==='column') return g.size>=140 && sy>=0.22 && Math.max(sx,sz)>=0.04 && Math.max(sx,sz)<=0.22;
+  return true;
+}
+
+function createSpatialPieces(key, faces){
+  if(!faces?.length) return [];
+  const buckets=new Map();
+  const put=(name, f)=>{ if(!buckets.has(name)) buckets.set(name, []); buckets.get(name).push(f); };
+  for(const f of faces){
+    const p=faceNormalized(f);
+    let name='main';
+    if(key==='base'){
+      name = 'base-whole';
+    }else if(key==='stairs'){
+      name = 'stairs-whole';
+    }else if(key==='body'){
+      const dx=Math.abs(p.x-.5), dz=Math.abs(p.z-.5);
+      name = dx>dz ? (p.x<.5 ? 'body-left' : 'body-right') : (p.z<.5 ? 'body-back' : 'body-front');
+    }else if(key==='roof'){
+      const dx=Math.abs(p.x-.5), dz=Math.abs(p.z-.5);
+      name = dx>dz ? (p.x<.5 ? 'roof-left' : 'roof-right') : (p.z<.5 ? 'roof-back' : 'roof-front');
+    }else{
+      name = key;
+    }
+    put(name, f);
+  }
+  const pieces=[];
+  for(const [name, groupFaces] of buckets.entries()){
+    if(!groupFaces.length) continue;
+    const center=new THREE.Vector3();
+    groupFaces.forEach(f=>center.add(faceCenters[f]));
+    center.multiplyScalar(1/Math.max(1,groupFaces.length));
+    pieces.push({name, faces:groupFaces, center});
+  }
+  return pieces;
+}
+
+function componentBoundsNormalized(ci){
+  const faces=componentFaces[ci]||[];
+  if(!faces.length){
+    const z={x:0,y:0,z:0};
+    return {min:new THREE.Vector3(),max:new THREE.Vector3(),nmin:z,nmax:z};
+  }
+  return computeBoundsForFaces(faces);
+}
+
+function dominantSemanticForComponent(ci){
+  const faces=componentFaces[ci]||[];
+  const counts={base:0,stairs:0,body:0,door:0,column:0,ornament:0,roof:0,finial:0};
+  for(const f of faces){
+    const k=semanticFaceLabels[f]||'body';
+    counts[k]=(counts[k]||0)+1;
+  }
+  const p=normalizedPoint(componentCentroids[ci]||new THREE.Vector3());
+  // Ưu tiên các vùng có ý nghĩa kiến trúc rõ để component lớn không bị gán bởi vài mặt biên.
+  if(counts.stairs>0 && isFrontStairsNorm(p) && counts.stairs>=Math.max(3,faces.length*.12)) return 'stairs';
+  if(counts.finial>0 && p.y>=.88) return 'finial';
+  if(counts.door>=Math.max(6,faces.length*.24)) return 'door';
+  if(counts.column>=Math.max(8,faces.length*.30)) return 'column';
+  if(counts.roof>=Math.max(8,faces.length*.34) && p.y>=.58) return 'roof';
+  if(counts.base>=Math.max(8,faces.length*.34) && p.y<=.25) return 'base';
+  let best='body', bestN=-1;
+  for(const k of ['stairs','base','door','column','roof','finial','body']){
+    if((counts[k]||0)>bestN){bestN=counts[k]||0;best=k;}
+  }
+  return best;
+}
+
+function isSignificantComponent(ci,bounds=null){
+  const size=componentFaceCounts[ci]||0;
+  const b=bounds||componentBoundsNormalized(ci);
+  const sx=Math.max(0,b.nmax.x-b.nmin.x), sy=Math.max(0,b.nmax.y-b.nmin.y), sz=Math.max(0,b.nmax.z-b.nmin.z);
+  const maxSpan=Math.max(sx,sy,sz);
+  // Không lấy mảnh liti làm vùng phát sáng. Giữ các chi tiết dài/lớn có vai trò cấu trúc.
+  return size>=52 || (size>=26 && maxSpan>=.055) || (size>=14 && sy>=.12 && maxSpan>=.12);
+}
+
+function majorPartDescriptor(key,p,ci=-1,center=null){
+  const side=facadeCodeFromNorm(p);
+  if(key==='stairs'){
+    const region = center ? findStairRegionForPoint(center) : null;
+    if(region) return {id:region.id,key,title:region.title,order:12,region};
+    return {id:`stairs-${side.code}`,key,title:`Cầu thang ${stairSideName(side.code)}`,order:12};
+  }
+  if(key==='base') return {id:'base-all',key,title:'Đế tháp / bệ tháp',order:20};
+  if(key==='finial') return {id:'finial-top',key,title:'Chóp tháp',order:90};
+  if(key==='roof'){
+    const tier=p.y<.72?'lower':(p.y<.84?'middle':'upper');
+    const label=tier==='lower'?'Tầng mái dưới':(tier==='middle'?'Tầng mái giữa':'Tầng mái trên');
+    const ord=tier==='lower'?70:(tier==='middle'?75:80);
+    return {id:`roof-${tier}`,key,title:label,order:ord};
+  }
+  if(key==='door'){
+    const region = center ? findDoorRegionForPoint(center) : null;
+    if(region) return {id:region.id,key,title:region.title,order:45,region};
+    return {id:`door-${side.code}`,key,title:`Cửa tháp ${side.name}`,order:45};
+  }
+  if(key==='column'){
+    const region = center ? findColumnRegionForPoint(center) : null;
+    if(region) return {id:region.id,key,title:region.title,order:55,region};
+    const lateral=(side.code==='front'||side.code==='back')
+      ? (p.x<.5?{code:'left',name:'trái'}:{code:'right',name:'phải'})
+      : (p.z<.5?{code:'front',name:'trước'}:{code:'back',name:'sau'});
+    return {id:`column-${side.code}-${lateral.code}`,key,title:`Cột / trụ ${side.name} - phía ${lateral.name}`,order:55};
+  }
+  return {id:`body-${side.code}`,key:'body',title:`Thân tháp · ${side.name}`,order:35};
+}
+
+function buildMajorParts(){
+  const map=new Map();
+  majorPartStats={significant:0,tiny:0};
+  const componentInfo=new Array(componentFaces.length);
+
+  for(let ci=0;ci<componentFaces.length;ci++){
+    const faces=componentFaces[ci]||[];
+    if(!faces.length)continue;
+    const center=(componentCentroids[ci]||new THREE.Vector3()).clone();
+    const norm=normalizedPoint(center);
+    let key=dominantSemanticForComponent(ci);
+    if(key==='ornament') key='body';
+    const desc=majorPartDescriptor(key,norm,ci,center);
+    const bounds=componentBoundsNormalized(ci);
+    const significant=isSignificantComponent(ci,bounds);
+    if(significant) majorPartStats.significant++; else majorPartStats.tiny++;
+    componentInfo[ci]={ci,faces,center,norm,key:desc.key,desc,bounds,significant};
+
+    let piece=map.get(desc.id);
+    if(!piece){
+      piece={id:desc.id,key:desc.key,title:desc.title,order:desc.order,faces:[],selectFaces:[],explodeFaces:[],components:[],center:new THREE.Vector3(),weight:0,region:desc.region||null};
+      map.set(desc.id,piece);
+    }
+    piece.faces.push(...faces);
+    if(significant) piece.selectFaces.push(...faces);
+    piece.components.push(ci);
+    const w=Math.max(1,componentFaceCounts[ci]||faces.length);
+    piece.center.addScaledVector(center,w); piece.weight+=w;
+  }
+
+  // ép vùng chọn cho các nhóm đặc biệt theo đúng vật thể thực
+  for(const piece of map.values()){
+    if(piece.key==='door'){
+      const region = piece.region || findDoorRegionForPoint(piece.center.clone().multiplyScalar(piece.weight?1/piece.weight:1));
+      if(region?.faces?.length) piece.selectFaces=[...region.faces];
+    }else if(piece.key==='column'){
+      const region = piece.region || findColumnRegionForPoint(piece.center.clone().multiplyScalar(piece.weight?1/piece.weight:1));
+      if(region?.faces?.length) piece.selectFaces=[...region.faces];
+    }else if(piece.key==='stairs'){
+      const region = piece.region || findStairRegionForPoint(piece.center.clone().multiplyScalar(piece.weight?1/piece.weight:1));
+      if(region?.faces?.length) piece.selectFaces=[...region.faces];
+    }
+    const highlightKeys = new Set(['door','stairs','column','base','finial']);
+    piece.explodeFaces = (highlightKeys.has(piece.key) && piece.selectFaces.length) ? [...piece.selectFaces] : [...piece.faces];
+  }
+
+  majorParts=[...map.values()].filter(p=>p.faces.length).sort((a,b)=>a.order-b.order||a.id.localeCompare(b.id));
+  faceMajorPart=new Int32Array(faceCenters.length); faceMajorPart.fill(-1);
+  componentMajorPart=new Int32Array(componentFaces.length); componentMajorPart.fill(-1);
+
+  majorParts.forEach((piece,pi)=>{
+    if(piece.weight>0) piece.center.multiplyScalar(1/piece.weight);
+    if(!piece.selectFaces.length && piece.components.length){
+      const largest=[...piece.components].sort((a,b)=>(componentFaceCounts[b]||0)-(componentFaceCounts[a]||0))[0];
+      piece.selectFaces=[...(componentFaces[largest]||[])];
+    }
+    if(!piece.explodeFaces?.length) piece.explodeFaces = [...(piece.selectFaces?.length ? piece.selectFaces : piece.faces)];
+    for(const ci of piece.components){
+      componentMajorPart[ci]=pi;
+      for(const f of componentFaces[ci]||[]) faceMajorPart[f]=pi;
+    }
+  });
+
+  const covered=majorParts.reduce((n,p)=>n+p.faces.length,0);
+  if(covered!==faceCenters.length) console.warn('[MajorParts] Face coverage mismatch',covered,faceCenters.length);
+  console.info(`[MajorParts] ${componentFaces.length} component → ${majorParts.length} vật thể lớn; ${majorPartStats.tiny} cụm nhỏ đã gộp.`);
+}
+
+function buildExploded(){
+  if(explodeBuilt)return;
+  explodeBuilt=true;
+  explodedGroup=new THREE.Group();
+  explodedGroup.name='EXPLODED_MAJOR_PARTS';
+  originalMesh.parent.add(explodedGroup);
+
+  majorParts.forEach((piece,pi)=>{
+    const explodeFaces = piece.faces?.length ? piece.faces : (piece.explodeFaces?.length ? piece.explodeFaces : []);
+    if(!explodeFaces?.length)return;
+    const m=new THREE.Mesh(createFaceGeometry(explodeFaces),activeMaterial);
+    m.userData.semanticKey=piece.key;
+    m.userData.majorPartIndex=pi;
+    m.userData.faceIds=[...explodeFaces];
+    m.userData.selectFaceIds=[...piece.selectFaces];
+    m.userData.pieceName=piece.id;
+    m.userData.base=new THREE.Vector3();
+    m.userData.groupCenter=piece.center.clone();
+    m.userData.explodeDir=explodeDirectionForPiece(piece.key,piece.center.clone());
+    explodedGroup.add(m);
+  });
+  explodedGroup.visible=false;
+}
+
+function applyExplodedLayout(){
+  if(!explodedGroup) return;
+  const baseDistance = maxDim*(2.35*explodeAmount + (explodeAmount>0 ? 0.18 : 0));
+  const selectedExtra = maxDim*(0.32 + 0.30*explodeAmount);
+  explodedGroup.children.forEach(m=>{
+    const pos = m.userData.explodeDir.clone().multiplyScalar(baseDistance);
+    if(selectedExplodedChild===m){
+      pos.add(m.userData.explodeDir.clone().multiplyScalar(selectedExtra));
+    }
+    m.position.copy(pos);
+  });
+}
+
+function focusExplodedChild(obj){
+  if(selectedExplodedOutline){
+    selectedExplodedOutline.parent?.remove(selectedExplodedOutline);
+    selectedExplodedOutline.geometry?.dispose?.();
+    selectedExplodedOutline.material?.dispose?.();
+    selectedExplodedOutline=null;
+  }
+  selectedExplodedChild=obj||null;
+  if(selectedExplodedChild){
+    const pi=selectedExplodedChild.userData.majorPartIndex;
+    const piece=Number.isInteger(pi)?majorParts[pi]:null;
+    const outlineFaces=piece?.selectFaces?.length?piece.selectFaces:(selectedExplodedChild.userData.selectFaceIds||selectedExplodedChild.userData.faceIds||[]);
+    const sourceGeo=createFaceGeometry(outlineFaces);
+    const edgeGeo=new THREE.EdgesGeometry(sourceGeo,24);
+    sourceGeo.dispose();
+    selectedExplodedOutline=new THREE.LineSegments(edgeGeo,new THREE.LineBasicMaterial({color:0xb7ffff,transparent:true,opacity:.98,depthTest:true}));
+    selectedExplodedOutline.renderOrder=9;
+    selectedExplodedOutline.scale.setScalar(1.006);
+    selectedExplodedChild.add(selectedExplodedOutline);
+  }
+  applyExplodedLayout();
+}
+
+function updateExplosion(v){
+  explodeAmount=v;
+  if(v>.001){
+    buildExploded();
+    if(explodedGroup) explodedGroup.visible=true;
+    if(edgeLines) edgeLines.visible=false;
+    refreshOriginalModelMaterial();
+    applyExplodedLayout();
+  }else{
+    if(explodedGroup) explodedGroup.visible=false;
+    refreshOriginalModelMaterial();
+    updateEdgeVisibility();
+  }
+  clearSelection();
+}
+
+function buildEffects(){
+  ringGroup=new THREE.Group(); effectsRoot.add(ringGroup);
+  const y=-modelHeight/2-.045;
+  [0.48,0.68,0.88].forEach((r,i)=>{const geo=new THREE.TorusGeometry(maxDim*r,0.005*(i+1),8,128);const mat=new THREE.MeshBasicMaterial({color:i===1?0x48efff:0x1d9eaa,transparent:true,opacity:.24-i*.04,blending:THREE.AdditiveBlending,depthWrite:false});const t=new THREE.Mesh(geo,mat);t.rotation.x=Math.PI/2;t.position.y=y;t.userData.speed=(i%2?-.25:.18);ringGroup.add(t);});
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(maxDim*.72,96),new THREE.MeshBasicMaterial({color:0x0fd6e2,transparent:true,opacity:.035,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));disc.rotation.x=-Math.PI/2;disc.position.y=y-.002;ringGroup.add(disc);
+  const count=160, arr=new Float32Array(count*3);for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,r=maxDim*(.55+Math.random()*.55);arr[i*3]=Math.cos(a)*r;arr[i*3+1]=(Math.random()-.5)*modelHeight*1.25;arr[i*3+2]=Math.sin(a)*r;}
+  const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(arr,3));particles=new THREE.Points(pg,new THREE.PointsMaterial({color:0x6cf7ff,size:.008*maxDim,transparent:true,opacity:.42,blending:THREE.AdditiveBlending,depthWrite:false}));effectsRoot.add(particles);
+}
+
+function buildEdgeLines(){
+  const edges = new THREE.EdgesGeometry(originalMesh.geometry, 18);
+  const mat = new THREE.LineBasicMaterial({color:0x9efcff,transparent:true,opacity:.9,depthWrite:false});
+  edgeLines = new THREE.LineSegments(edges, mat);
+  edgeLines.renderOrder = 6;
+  originalMesh.parent.add(edgeLines);
+  updateEdgeVisibility();
+}
+
+function updateEdgeVisibility(){
+  if(!edgeLines)return;
+  edgeLines.visible = explodeAmount<.001 && (displayMode==='grid');
+}
+
+function applyDisplayMode(){
+  const baseMat = displayMode==='texture' ? originalMaterial : (displayMode==='grid' ? gridMaterial : holoMaterial);
+  activeMaterial=baseMat;
+  if('wireframe' in activeMaterial){ activeMaterial.wireframe = wireframe; activeMaterial.needsUpdate=true; }
+  refreshOriginalModelMaterial();
+  if(explodedGroup)explodedGroup.children.forEach(m=>m.material=activeMaterial);
+  document.getElementById('btnTexture').classList.toggle('active',displayMode==='texture');
+  document.getElementById('btnHolo').classList.toggle('active',displayMode==='holo');
+  document.getElementById('btnGridMode').classList.toggle('active',displayMode==='grid');
+  if(ringGroup){ ringGroup.visible = displayMode!=='texture'; }
+  updateEdgeVisibility();
+}
+
+function faceNormalized(f){
+  return normalizedPoint(faceCenters[f]);
+}
+
+function normalizedPoint(localPoint){
+  const b=originalMesh.geometry.boundingBox || (originalMesh.geometry.computeBoundingBox(),originalMesh.geometry.boundingBox);
+  const nx=(localPoint.x-b.min.x)/(b.max.x-b.min.x), ny=(localPoint.y-b.min.y)/(b.max.y-b.min.y), nz=(localPoint.z-b.min.z)/(b.max.z-b.min.z);
+  return {x:THREE.MathUtils.clamp(nx,0,1),y:THREE.MathUtils.clamp(ny,0,1),z:THREE.MathUtils.clamp(nz,0,1)};
+}
+
+function between(v,a,b){ return v>=a && v<=b; }
+function inFrontBox(p, x1,x2, y1,y2, minFront=.0, maxFront=1.0){
+  const front = 1-p.z;
+  return between(p.x,x1,x2) && between(p.y,y1,y2) && between(front,minFront,maxFront);
+}
+
+function isFrontStairsNorm(p){
+  return p.z<=.34 && p.x>=.28 && p.x<=.72 && p.y>=.0 && p.y<=.255;
+}
+function isBackStairsNorm(p){
+  return p.z>=.66 && p.x>=.28 && p.x<=.72 && p.y>=.0 && p.y<=.255;
+}
+
+function semanticKeyFromNormalized(p, localNormal, ci){
+  const x=p.x, y=p.y, z=p.z;
+  const front=1-z, back=z, left=1-x, right=x;
+
+  if(y>=.90) return 'finial';
+
+  // Cầu thang được ưu tiên nhận diện trước vì nằm ở đáy và dễ chồng với đế.
+  if(isFrontStairsNorm(p) || isBackStairsNorm(p)) return 'stairs';
+
+  // Đế ở rất thấp cần tách trước để chân cột không ăn xuống bệ.
+  const edgeBand = between(x,0,.22) || between(x,.78,1) || between(z,0,.22) || between(z,.78,1);
+  if(y<.115 && !isFrontStairsNorm(p) && !isBackStairsNorm(p)) return 'base';
+
+  // Vùng cửa siết hẹp hơn để không lấn sang cột bên cạnh.
+  const frontDoor = between(x,.32,.68) && between(y,.16,.84) && front>=.57;
+  const backDoor  = between(x,.32,.68) && between(y,.16,.84) && back>=.57;
+  const leftDoor  = between(z,.32,.68) && between(y,.16,.84) && left>=.57;
+  const rightDoor = between(z,.32,.68) && between(y,.16,.84) && right>=.57;
+  if(frontDoor || backDoor || leftDoor || rightDoor) return 'door';
+
+  // Cột chỉ bắt đầu từ trên bệ, không lấy chân đế.
+  const frontColumns = (
+    inFrontBox(p,.06,.24,.14,.95,.18,1.0) ||
+    inFrontBox(p,.76,.94,.14,.95,.18,1.0)
+  );
+  const backColumns = (
+    (between(x,.06,.24) && between(y,.14,.95) && back>=.18) ||
+    (between(x,.76,.94) && between(y,.14,.95) && back>=.18)
+  );
+  const sideColumns = between(y,.14,.95) && (
+    (between(x,.00,.16) && between(z,.14,.86)) ||
+    (between(x,.84,1.00) && between(z,.14,.86)) ||
+    (between(z,.00,.16) && between(x,.14,.86)) ||
+    (between(z,.84,1.00) && between(x,.14,.86))
+  );
+  if(frontColumns || backColumns || sideColumns) return 'column';
+
+  if(y>=.60) return 'roof';
+  if(y<.18 && edgeBand && !isFrontStairsNorm(p) && !isBackStairsNorm(p)) return 'base';
+  return 'body';
+}
+
+function buildSemanticGroups(){
+  semanticGroups = { base:[], stairs:[], body:[], door:[], column:[], ornament:[], roof:[], finial:[] };
+  semanticFaceLabels = new Array(faceCenters.length);
+  faceSemanticGroupIndex = new Array(faceCenters.length).fill(-1);
+  for(let f=0; f<faceCenters.length; f++){
+    const p=faceNormalized(f); const ci=faceComponent?faceComponent[f]:-1;
+    const key=semanticKeyFromNormalized(p, faceNormals[f], ci);
+    semanticFaceLabels[f]=key;
+    semanticGroups[key].push(f);
+  }
+  semanticSubgroups = {};
+  for(const key of ['door','column']){
+    semanticSubgroups[key]=[];
+    const visited=new Set();
+    for(const seed of semanticGroups[key]){
+      if(visited.has(seed))continue;
+      const queue=[seed];visited.add(seed);const faces=[];const center=new THREE.Vector3();
+      while(queue.length){
+        const f=queue.pop();faces.push(f);center.add(faceCenters[f]);
+        for(const nb of faceNeighbors[f]||[]){
+          if(!visited.has(nb) && semanticFaceLabels[nb]===key){ visited.add(nb); queue.push(nb); }
+        }
+      }
+      const minSize = key==='door' ? 10 : 28;
+      if(faces.length<minSize) continue;
+      center.multiplyScalar(1/Math.max(1,faces.length));
+      const np=normalizedPoint(center);
+      const bounds=computeBoundsForFaces(faces);
+      semanticSubgroups[key].push({faces,center,size:faces.length,norm:np,bounds});
+    }
+    semanticSubgroups[key].sort((a,b)=>b.size-a.size);
+  }
+  // loại bớt cụm nhiễu rất nhỏ để vùng chọn không lan và không dính mảnh vỡ
+  for(const key of ['stairs','base','body','roof','finial']){
+    semanticGroups[key] = semanticGroups[key].filter(f=>{
+      const ci=faceComponent?faceComponent[f]:-1;
+      const size=ci>=0?(componentFaceCounts[ci]||0):999999;
+      return size>=12;
+    });
+  }
+}
+
+function classifyDetailed(localPoint, localNormal, ci, faceIndex=null){
+  const nrm=normalizedPoint(localPoint);
+  if(isFrontStairsNorm(nrm)){
+    return {key:'stairs',...DETAIL_DB.stairs,y:nrm.y,doorRegion:null};
+  }
+  const doorRegion=findDoorRegionForNorm(nrm);
+  const key=doorRegion ? 'door' : semanticKeyFromNormalized(nrm, localNormal, ci);
+  return {key,...DETAIL_DB[key],y:nrm.y,doorRegion};
+}
+
+function computeBoundsForFaces(faces){
+  const min=new THREE.Vector3(Infinity,Infinity,Infinity), max=new THREE.Vector3(-Infinity,-Infinity,-Infinity);
+  for(const f of faces){
+    const c=faceCenters[f];
+    min.min(c); max.max(c);
+  }
+  return {min,max,nmin:normalizedPoint(min),nmax:normalizedPoint(max)};
+}
+
+function facadeCodeFromNorm(p){
+  const scores = [
+    {code:'front', name:'mặt trước', v:1-p.z},
+    {code:'back',  name:'mặt sau',   v:p.z},
+    {code:'left',  name:'mặt trái',  v:1-p.x},
+    {code:'right', name:'mặt phải',  v:p.x}
+  ].sort((a,b)=>b.v-a.v);
+  return scores[0];
+}
+function facadeNameFromNorm(p){
+  return facadeCodeFromNorm(p).name;
+}
+function detectDoorSide(bounds, norm){
+  const cx=norm.x, cz=norm.z;
+  const frontness = bounds.nmax.z;
+  const backness  = 1-bounds.nmin.z;
+  const leftness  = 1-bounds.nmin.x;
+  const rightness = bounds.nmax.x;
+  // Ưu tiên trước/sau cho các vùng nằm gần trục giữa, còn lệch mạnh về mép thì là trái/phải.
+  if(cx>=0.26 && cx<=0.74 && (frontness>=0.56 || backness>=0.56)){
+    return frontness>=backness ? {code:'front',name:'mặt trước'} : {code:'back',name:'mặt sau'};
+  }
+  if(cz>=0.26 && cz<=0.74 && (leftness>=0.56 || rightness>=0.56)){
+    return leftness>=rightness ? {code:'left',name:'mặt trái'} : {code:'right',name:'mặt phải'};
+  }
+  const scores=[
+    {code:'front',name:'mặt trước',v:frontness},
+    {code:'back',name:'mặt sau',v:backness},
+    {code:'left',name:'mặt trái',v:leftness},
+    {code:'right',name:'mặt phải',v:rightness}
+  ].sort((a,b)=>b.v-a.v);
+  return scores[0];
+}
+function detectColumnSide(bounds, norm){
+  const frontness = bounds.nmax.z;
+  const backness  = 1-bounds.nmin.z;
+  const leftness  = 1-bounds.nmin.x;
+  const rightness = bounds.nmax.x;
+  const scores=[
+    {code:'front', name:'mặt trước', v:frontness},
+    {code:'back',  name:'mặt sau',   v:backness},
+    {code:'left',  name:'mặt trái',  v:leftness},
+    {code:'right', name:'mặt phải',  v:rightness}
+  ].sort((a,b)=>b.v-a.v);
+  return scores[0];
+}
+function doorLevelName(y){
+  if(y<.38) return 'dưới';
+  if(y<.58) return 'giữa';
+  return 'trên';
+}
+function stairSideName(sideCode){
+  return sideCode==='back' ? 'cửa sau' : 'cửa trước';
+}
+
+function isAllowedPieceKey(key){
+  return ['door','stairs','base','finial','column'].includes(key);
+}
+function columnTypeFromBounds(bounds, size){
+  const h=(bounds?.nmax?.y||0)-(bounds?.nmin?.y||0);
+  const w=Math.max((bounds?.nmax?.x||0)-(bounds?.nmin?.x||0),(bounds?.nmax?.z||0)-(bounds?.nmin?.z||0));
+  return (h>=0.34 || size>=115) ? {code:'large',label:'Cột lớn'} : {code:'small',label:'Cột nhỏ / trụ ốp'};
+}
+function sideShortName(sideCode){
+  return ({front:'mặt trước',back:'mặt sau',left:'mặt trái',right:'mặt phải'})[sideCode] || sideCode;
+}
+
+function inferDoorSideCode(np){
+  if(np.z>=0.58 && np.x>=0.18 && np.x<=0.82) return 'front';
+  if(np.z<=0.42 && np.x>=0.18 && np.x<=0.82) return 'back';
+  if(np.x<=0.42 && np.z>=0.18 && np.z<=0.82) return 'left';
+  if(np.x>=0.58 && np.z>=0.18 && np.z<=0.82) return 'right';
+  const scores=[['front',np.z],['back',1-np.z],['left',1-np.x],['right',np.x]].sort((a,b)=>b[1]-a[1]);
+  return scores[0][0];
+}
+function inferDoorBandCode(np){
+  if(np.y<0.42) return 'duoi';
+  if(np.y<0.67) return 'giua';
+  return 'tren';
+}
+function inferColumnSideCode(np){
+  const edgeScores=[['front',np.z],['back',1-np.z],['left',1-np.x],['right',np.x]].sort((a,b)=>b[1]-a[1]);
+  return edgeScores[0][0];
+}
+function inferColumnLateralCode(sideCode,np){
+  if(sideCode==='front' || sideCode==='back') return np.x<0.5 ? 'left' : 'right';
+  return np.z<0.5 ? 'front' : 'back';
+}
+function setOrbitFocusWorld(worldPoint){
+  return;
+}
+function disposeReferenceMaterial(){
+  if(referenceMaterial){
+    referenceMaterial.dispose?.();
+    referenceMaterial = null;
+  }
+}
+function refreshOriginalModelMaterial(){
+  if(!originalMesh || !activeMaterial) return;
+  disposeReferenceMaterial();
+  if(explodeAmount>.001){
+    originalMesh.material = activeMaterial;
+    originalMesh.visible = false;
+  }else{
+    originalMesh.material = activeMaterial;
+    originalMesh.visible = true;
+  }
+}
+
+const DOOR_LEVEL_BANDS = [
+  {code:'duoi', label:'dưới', yMin:0.14, yMax:0.42},
+  {code:'giua', label:'giữa', yMin:0.42, yMax:0.67},
+  {code:'tren', label:'trên', yMin:0.67, yMax:0.92}
+];
+function facadeFaceFilter(sideCode, np){
+  if(sideCode==='front') return np.z<=0.50;
+  if(sideCode==='back') return np.z>=0.50;
+  if(sideCode==='left') return np.x<=0.50;
+  if(sideCode==='right') return np.x>=0.50;
+  return true;
+}
+function collectDoorFacesForSide(sideCode){
+  const faces=[];
+  for(let f=0; f<faceCenters.length; f++){
+    if(semanticFaceLabels[f] !== 'door') continue;
+    const np=faceNormalized(f);
+    if(np.y < 0.14 || np.y > 0.92) continue;
+    if(!facadeFaceFilter(sideCode,np)) continue;
+    // cửa chỉ nằm trong dải giữa của mặt tương ứng, loại phần nghiêng ra mép.
+    if((sideCode==='front' || sideCode==='back') && (np.x < 0.16 || np.x > 0.84)) continue;
+    if((sideCode==='left' || sideCode==='right') && (np.z < 0.16 || np.z > 0.84)) continue;
+    faces.push(f);
+  }
+  return faces;
+}
+function pickDoorFacesForBand(sideCode, band, sourceFaces){
+  const bandFaces=(sourceFaces||[]).filter(f=>{
+    const np=faceNormalized(f);
+    return np.y>=band.yMin && np.y<=band.yMax && facadeFaceFilter(sideCode,np);
+  });
+  if(!bandFaces.length) return [];
+  const clusters=buildSelectionClusters([...new Set(bandFaces)]).sort((a,b)=>b.size-a.size);
+  if(!clusters.length) return [];
+
+  // Chọn cụm chính nằm gần trục cửa của mặt đó.
+  let best=clusters[0], bestScore=Infinity;
+  for(const c of clusters){
+    const axisScore=(sideCode==='front' || sideCode==='back')
+      ? Math.abs(c.norm.x-0.5) + Math.abs(c.norm.z-(sideCode==='front'?0.72:0.28))*0.45
+      : Math.abs(c.norm.z-0.5) + Math.abs(c.norm.x-(sideCode==='left'?0.28:0.72))*0.45;
+    const yScore=Math.abs(c.norm.y-((band.yMin+band.yMax)/2))*0.6;
+    const score=axisScore+yScore-(c.size*0.00008);
+    if(score<bestScore){ bestScore=score; best=c; }
+  }
+  return trimDoorFaces({faces:best.faces,bounds:computeBoundsForFaces(best.faces),sideCode,norm:best.norm});
+}
+function doorTitle(sideCode, band, idx, sizeLabel){
+  if(sideCode==='front' && band.code==='duoi') return 'Cửa trước chính';
+  const sideName=sideShortName(sideCode);
+  return `Cửa ${sizeLabel} ${sideName} · ${band.label}`;
+}
+function buildDoorRegions(){
+  doorRegions=[];
+  for(const sideCode of ['front','back','left','right']){
+    const sourceFaces=collectDoorFacesForSide(sideCode);
+    const perBand=[];
+    for(const band of DOOR_LEVEL_BANDS){
+      let faces=pickDoorFacesForBand(sideCode, band, sourceFaces);
+      if(!faces.length) continue;
+      faces=[...new Set(faces)];
+      const bounds=computeBoundsForFaces(faces);
+      const center=new THREE.Vector3();
+      faces.forEach(f=>center.add(faceCenters[f]));
+      center.multiplyScalar(1/Math.max(1,faces.length));
+      const norm=normalizedPoint(center);
+      perBand.push({
+        id:`door-${sideCode}-${band.code}`,
+        faces,
+        center:center.clone(),
+        norm,
+        bounds,
+        sideCode,
+        sideName:({front:'mặt trước',back:'mặt sau',left:'mặt trái',right:'mặt phải'})[sideCode],
+        level:band.label,
+        levelCode:band.code,
+        size:faces.length,
+        tag:'CỬA THÁP'
+      });
+    }
+    perBand.sort((a,b)=>a.norm.y-b.norm.y);
+    const maxSize=perBand.length?Math.max(...perBand.map(r=>r.size)):0;
+    perBand.forEach((r,idx)=>{
+      r.sizeLabel = (r.size >= maxSize*0.78 || r.levelCode==='duoi') ? 'lớn' : 'nhỏ';
+      r.title = doorTitle(sideCode, DOOR_LEVEL_BANDS.find(b=>b.code===r.levelCode), idx, r.sizeLabel);
+      doorRegions.push(r);
+    });
+  }
+}
+function findDoorRegionForNorm(np){
+  let insideBest=null, insideScore=Infinity;
+  for(const r of doorRegions){
+    const b=r.bounds;
+    const inside=np.x>=b.nmin.x-.02 && np.x<=b.nmax.x+.02 && np.y>=b.nmin.y-.02 && np.y<=b.nmax.y+.03 && np.z>=b.nmin.z-.02 && np.z<=b.nmax.z+.02;
+    if(!inside) continue;
+    const dx=np.x-r.norm.x, dy=np.y-r.norm.y, dz=np.z-r.norm.z;
+    const score=dx*dx + dy*dy*1.2 + dz*dz;
+    if(score<insideScore){ insideScore=score; insideBest=r; }
+  }
+  if(insideBest) return insideBest;
+  let best=null, bestScore=Infinity;
+  for(const r of doorRegions){
+    const dx=np.x-r.norm.x, dy=np.y-r.norm.y, dz=np.z-r.norm.z;
+    const score=dx*dx + dy*dy*1.4 + dz*dz;
+    if(score<bestScore){ bestScore=score; best=r; }
+  }
+  return bestScore<0.14 ? best : null;
+}
+function findDoorRegionForPoint(localPoint){
+  return findDoorRegionForNorm(normalizedPoint(localPoint));
+}
+function buildColumnRegions(){
+  columnRegions=[];
+  const seeds=[];
+  for(const g of semanticSubgroups['column']||[]){
+    if((g.size||0) < 20) continue;
+    const bounds=g.bounds || computeBoundsForFaces(g.faces);
+    const side=detectColumnSide(bounds, g.norm);
+    const lateral=(side.code==='front'||side.code==='back')
+      ? (g.norm.x<.5?{code:'left',name:'trái'}:{code:'right',name:'phải'})
+      : (g.norm.z<.5?{code:'front',name:'trước'}:{code:'back',name:'sau'});
+    seeds.push({
+      faces:[...g.faces],
+      center:g.center.clone(),
+      norm:g.norm,
+      bounds,
+      sideCode:side.code,
+      sideName:side.name,
+      lateralCode:lateral.code,
+      lateralName:lateral.name,
+      size:g.size
+    });
+  }
+
+  const groups=[];
+  for(const seed of seeds){
+    let found=null;
+    for(const grp of groups){
+      if(grp.sideCode!==seed.sideCode || grp.lateralCode!==seed.lateralCode) continue;
+      const axisDist=(seed.sideCode==='front'||seed.sideCode==='back')
+        ? Math.abs(seed.norm.x-grp.norm.x)
+        : Math.abs(seed.norm.z-grp.norm.z);
+      const depthDist=(seed.sideCode==='front'||seed.sideCode==='back')
+        ? Math.abs(seed.norm.z-grp.norm.z)
+        : Math.abs(seed.norm.x-grp.norm.x);
+      const yGap=Math.max(0, Math.max(grp.bounds.nmin.y-seed.bounds.nmax.y, seed.bounds.nmin.y-grp.bounds.nmax.y));
+      if(axisDist<=0.05 && depthDist<=0.05 && yGap<=0.16){ found=grp; break; }
+    }
+    if(!found){
+      groups.push({
+        sideCode:seed.sideCode, sideName:seed.sideName,
+        lateralCode:seed.lateralCode, lateralName:seed.lateralName,
+        faces:[...seed.faces], bounds:seed.bounds, norm:{...seed.norm}
+      });
+    }else{
+      found.faces.push(...seed.faces);
+      found.faces=[...new Set(found.faces)];
+      found.bounds=computeBoundsForFaces(found.faces);
+      const c=new THREE.Vector3(); found.faces.forEach(f=>c.add(faceCenters[f]));
+      c.multiplyScalar(1/Math.max(1,found.faces.length));
+      found.norm=normalizedPoint(c);
+    }
+  }
+
+  const counts=new Map();
+  for(const grp of groups){
+    let faces=[...new Set(grp.faces)].filter(f=>semanticFaceLabels[f]==='column');
+    const clusters=buildSelectionClusters(faces).sort((a,b)=>b.size-a.size);
+    if(clusters.length){
+      const primary=clusters[0];
+      const pb=computeBoundsForFaces(primary.faces);
+      const keep=[];
+      for(const c of clusters){
+        const cb=computeBoundsForFaces(c.faces);
+        const axisDist=(grp.sideCode==='front'||grp.sideCode==='back')
+          ? Math.abs(c.norm.x-primary.norm.x)
+          : Math.abs(c.norm.z-primary.norm.z);
+        const depthDist=(grp.sideCode==='front'||grp.sideCode==='back')
+          ? Math.abs(c.norm.z-primary.norm.z)
+          : Math.abs(c.norm.x-primary.norm.x);
+        const verticalTouch = cb.nmin.y <= pb.nmax.y+0.02 && cb.nmax.y >= pb.nmin.y-0.02;
+        const notBase = cb.nmax.y >= 0.12;
+        const slimEnough = ((cb.nmax.x-cb.nmin.x)<=0.20) && ((cb.nmax.z-cb.nmin.z)<=0.20);
+        if(c===primary || (axisDist<=0.03 && depthDist<=0.04 && verticalTouch && notBase && slimEnough)) keep.push(...c.faces);
+      }
+      faces=[...new Set(keep.length?keep:primary.faces)];
+    }
+    // Cắt bỏ mảnh chân bệ thấp và mảnh nền lân cận.
+    const b=computeBoundsForFaces(faces);
+    const ymin=Math.max(b.nmin.y, 0.10);
+    faces=faces.filter(f=>{
+      const np=faceNormalized(f);
+      const withinY=np.y>=ymin-0.005;
+      const withinX=np.x>=b.nmin.x-0.01 && np.x<=b.nmax.x+0.01;
+      const withinZ=np.z>=b.nmin.z-0.01 && np.z<=b.nmax.z+0.01;
+      return withinY && withinX && withinZ && semanticFaceLabels[f]==='column';
+    });
+    if(!faces.length) continue;
+    faces=trimColumnFaces({faces,bounds:computeBoundsForFaces(faces),norm:grp.norm,sideCode:grp.sideCode}, null, null);
+    if(!faces.length) continue;
+    const bounds=computeBoundsForFaces(faces);
+    const center=new THREE.Vector3(); faces.forEach(f=>center.add(faceCenters[f]));
+    center.multiplyScalar(1/Math.max(1,faces.length));
+    const norm=normalizedPoint(center);
+    const trackKey=`${grp.sideCode}-${grp.lateralCode}`;
+    const idx=(counts.get(trackKey)||0)+1; counts.set(trackKey, idx);
+    const kind=columnTypeFromBounds(bounds, faces.length);
+    const title = 'Cột tháp';
+    columnRegions.push({
+      id:`column-${kind.code}-${grp.sideCode}-${grp.lateralCode}-${idx}`,
+      faces,
+      center,
+      norm,
+      bounds,
+      sideCode:grp.sideCode,
+      sideName:grp.sideName,
+      lateralCode:grp.lateralCode,
+      lateralName:grp.lateralName,
+      size:faces.length,
+      kindCode:kind.code,
+      kindLabel:kind.label,
+      indexLabel:String(columnRegions.length+1).padStart(2,'0'),
+      title,
+      tag:'CỘT / TRỤ'
+    });
+  }
+}
+function findColumnRegionForPoint(localPoint){
+  const np=normalizedPoint(localPoint);
+  let insideBest=null, insideScore=Infinity;
+  for(const r of columnRegions){
+    const b=r.bounds;
+    const ex=.01, ey=.02, ez=.01;
+    const inside = np.x>=b.nmin.x-ex && np.x<=b.nmax.x+ex && np.y>=b.nmin.y-ey && np.y<=b.nmax.y+ey && np.z>=b.nmin.z-ez && np.z<=b.nmax.z+ez;
+    if(!inside) continue;
+    const axisDist=(r.sideCode==='front'||r.sideCode==='back') ? Math.abs(np.x-r.norm.x) : Math.abs(np.z-r.norm.z);
+    const depthDist=(r.sideCode==='front'||r.sideCode==='back') ? Math.abs(np.z-r.norm.z) : Math.abs(np.x-r.norm.x);
+    const score=axisDist + depthDist*0.8 + Math.abs(np.y-r.norm.y)*0.05;
+    if(score<insideScore){ insideScore=score; insideBest=r; }
+  }
+  if(insideBest) return insideBest;
+
+  let best=null, bestScore=Infinity;
+  for(const r of columnRegions){
+    const axisDist=(r.sideCode==='front'||r.sideCode==='back') ? Math.abs(np.x-r.norm.x) : Math.abs(np.z-r.norm.z);
+    const depthDist=(r.sideCode==='front'||r.sideCode==='back') ? Math.abs(np.z-r.norm.z) : Math.abs(np.x-r.norm.x);
+    const score=axisDist + depthDist + Math.abs(np.y-r.norm.y)*0.08;
+    if(score<bestScore){ bestScore=score; best=r; }
+  }
+  return best;
+}
+function buildStairRegions(){
+  stairRegions=[];
+
+  // Trên mô hình hiện tại, cụm cầu thang ở cửa trước nằm về phía z dương hơn.
+  const frontFacesAll=(semanticGroups.stairs||[]).filter(f=>{
+    const np=faceNormalized(f);
+    return np.z>=0.52 && np.y<=0.34 && np.x>=0.14 && np.x<=0.86;
+  });
+  const backFacesAll=(semanticGroups.stairs||[]).filter(f=>{
+    const np=faceNormalized(f);
+    return np.z<=0.48 && np.y<=0.34 && np.x>=0.14 && np.x<=0.86;
+  });
+  const packs=[['front',frontFacesAll],['back',backFacesAll]];
+
+  for(const [sideCode, faces0] of packs){
+    if(!faces0.length) continue;
+    const clusters=buildSelectionClusters([...new Set(faces0)]).sort((a,b)=>b.size-a.size);
+    if(!clusters.length) continue;
+
+    const primary=clusters[0];
+    const primaryBounds=computeBoundsForFaces(primary.faces);
+    const keep=[];
+    for(const c of clusters){
+      const b=computeBoundsForFaces(c.faces);
+      const sameSide = sideCode==='front' ? c.norm.z>=0.50 : c.norm.z<=0.50;
+      const nearBase = b.nmax.y<=0.34 && c.norm.y<=0.28;
+      const closeCenter = Math.abs(c.norm.x-primary.norm.x)<=0.18;
+      const verticalBand = b.nmin.y<=primaryBounds.nmax.y+0.04;
+      if(c===primary || (sameSide && nearBase && closeCenter && verticalBand && c.size>=Math.max(8, primary.size*0.05))){
+        keep.push(...c.faces);
+      }
+    }
+
+    let faces=[...new Set(keep.length?keep:primary.faces)];
+
+    // Cắt gọn chỉ trong khung bậc thang ở đáy để không lan sang cửa và cột cửa.
+    const rough=computeBoundsForFaces(faces);
+    const trim = { nmin:{...rough.nmin}, nmax:{...rough.nmax} };
+    trim.nmin.x=Math.max(trim.nmin.x-0.01, 0.12);
+    trim.nmax.x=Math.min(trim.nmax.x+0.01, 0.88);
+    trim.nmin.y=Math.max(trim.nmin.y-0.01, 0.00);
+    trim.nmax.y=Math.min(Math.max(trim.nmax.y, 0.28), 0.36);
+    if(sideCode==='front'){
+      trim.nmin.z=Math.max(trim.nmin.z-0.015, 0.50);
+      trim.nmax.z=Math.min(trim.nmax.z+0.015, 1.00);
+    }else{
+      trim.nmin.z=Math.max(trim.nmin.z-0.015, 0.00);
+      trim.nmax.z=Math.min(trim.nmax.z+0.015, 0.50);
+    }
+
+    faces=faces.filter(f=>{
+      const np=faceNormalized(f);
+      return np.x>=trim.nmin.x && np.x<=trim.nmax.x && np.y>=trim.nmin.y && np.y<=trim.nmax.y && np.z>=trim.nmin.z && np.z<=trim.nmax.z;
+    });
+    if(!faces.length) faces=[...primary.faces];
+    faces=trimStairFaces({faces,bounds:computeBoundsForFaces(faces),sideCode});
+
+    const center=new THREE.Vector3();
+    faces.forEach(f=>center.add(faceCenters[f]));
+    center.multiplyScalar(1/Math.max(1,faces.length));
+    const norm=normalizedPoint(center);
+    stairRegions.push({
+      id:`stairs-${sideCode}`,
+      faces,
+      center:center.clone(),
+      norm,
+      bounds:computeBoundsForFaces(faces),
+      sideCode,
+      sideName:sideCode==='front'?'mặt trước':'mặt sau',
+      size:faces.length,
+      title:sideCode==='front'?'Cầu thang cửa trước':'Cầu thang cửa sau',
+      tag:'CẦU THANG'
+    });
+  }
+}
+function findStairRegionForPoint(localPoint){
+  const np=normalizedPoint(localPoint);
+  let insideBest=null, insideScore=Infinity;
+  for(const r of stairRegions){
+    const b=r.bounds;
+    const inside = np.x>=b.nmin.x-.015 && np.x<=b.nmax.x+.015 && np.y>=b.nmin.y-.015 && np.y<=b.nmax.y+.02 && np.z>=b.nmin.z-.015 && np.z<=b.nmax.z+.015;
+    if(!inside) continue;
+    const score = Math.abs(np.x-r.norm.x) + Math.abs(np.y-r.norm.y)*0.2 + Math.abs(np.z-r.norm.z)*0.9;
+    if(score<insideScore){ insideScore=score; insideBest=r; }
+  }
+  if(insideBest) return insideBest;
+
+  let best=null, bestScore=Infinity;
+  for(const r of stairRegions){
+    const score = Math.abs(np.x-r.norm.x) + Math.abs(np.y-r.norm.y)*0.25 + Math.abs(np.z-r.norm.z);
+    if(score<bestScore){ bestScore=score; best=r; }
+  }
+  return best;
+}
+
+
+
+function doorTitleForGroup(group){
+  const p=group?.norm || normalizedPoint(group?.center || new THREE.Vector3());
+  const side=facadeNameFromNorm(p);
+  const level=doorLevelName(p.y||0);
+  const title=(side==='mặt trước' && level==='cửa dưới') ? 'Cửa chính mặt trước' : `${level} ${side}`;
+  return { title, tag:'CỬA THÁP' };
+}
+function findNearestSemanticSubgroup(key, localPoint){
+  let best=null, bestDist=Infinity;
+  for(const g of semanticSubgroups[key]||[]){
+    const d=g.center.distanceTo(localPoint);
+    if(d<bestDist){ bestDist=d; best=g; }
+  }
+  return best;
+}
+function facePassesFacade(np, sideCode){
+  if(sideCode==='front') return np.z<=0.50;
+  if(sideCode==='back')  return np.z>=0.50;
+  if(sideCode==='left')  return np.x<=0.50;
+  if(sideCode==='right') return np.x>=0.50;
+  return true;
+}
+function facesFromBox(bounds, allowedKeys, options={}){
+  const ex=options.expandX ?? .04, ey=options.expandY ?? .04, ez=options.expandZ ?? .04;
+  const sideCode=options.sideCode || null;
+  const faces=[];
+  for(let f=0; f<faceCenters.length; f++){
+    const key=semanticFaceLabels[f];
+    if(!allowedKeys.includes(key)) continue;
+    const np=faceNormalized(f);
+    if(sideCode && !facePassesFacade(np, sideCode)) continue;
+    if(np.x < bounds.nmin.x-ex || np.x > bounds.nmax.x+ex) continue;
+    if(np.y < bounds.nmin.y-ey || np.y > bounds.nmax.y+ey) continue;
+    if(np.z < bounds.nmin.z-ez || np.z > bounds.nmax.z+ez) continue;
+    faces.push(f);
+  }
+  return faces;
+}
+function expandSemanticSelection(key, subgroup, localPoint){
+  const p=subgroup?.norm || normalizedPoint(localPoint);
+  const side=facadeCodeFromNorm(p);
+  const bounds=subgroup?.bounds || computeBoundsForFaces(subgroup?.faces || []);
+  if(key==='door'){
+    const region=findDoorRegionForPoint(localPoint) || findDoorRegionForNorm(subgroup?.norm || p);
+    if(region) return [...region.faces];
+    return [...(subgroup?.faces||[])];
+  }
+  if(key==='column'){
+    let faces=facesFromBox(bounds,['column'],{expandX:.02,expandY:.03,expandZ:.02});
+    if(faces.length<24) faces=[...(subgroup?.faces||[])];
+    return faces;
+  }
+  return [...(subgroup?.faces||[])];
+}
+function buildSelectionClusters(faces){
+  const faceSet=new Set(faces), visited=new Set(), clusters=[];
+  for(const seed of faces){
+    if(visited.has(seed)) continue;
+    const queue=[seed]; visited.add(seed);
+    const clusterFaces=[]; const center=new THREE.Vector3();
+    while(queue.length){
+      const f=queue.pop(); clusterFaces.push(f); center.add(faceCenters[f]);
+      for(const nb of faceNeighbors[f]||[]){
+        if(faceSet.has(nb) && !visited.has(nb)){ visited.add(nb); queue.push(nb); }
+      }
+    }
+    center.multiplyScalar(1/Math.max(1,clusterFaces.length));
+    clusters.push({faces:clusterFaces, center, norm:normalizedPoint(center), size:clusterFaces.length, faceSet:new Set(clusterFaces)});
+  }
+  return clusters;
+}
+function choosePrimaryCluster(clusters, anchorFaceIndex, localPoint, subgroup){
+  if(!clusters.length) return null;
+  let primary = anchorFaceIndex!=null ? clusters.find(c=>c.faceSet.has(anchorFaceIndex)) : null;
+  const target = subgroup?.center || localPoint || new THREE.Vector3();
+  if(!primary){
+    let bestD=Infinity;
+    for(const c of clusters){
+      const d=c.center.distanceToSquared(target);
+      if(d<bestD){ bestD=d; primary=c; }
+    }
+  }
+  return primary || clusters.sort((a,b)=>b.size-a.size)[0];
+}
+function refineSelectionFaces(key, faces, anchorFaceIndex, localPoint, subgroup){
+  if(!faces?.length) return [];
+  if(key==='roof') return [];
+  if(key==='door') return faces;
+  if(!['column','base','stairs'].includes(key)) return faces;
+  const clusters=buildSelectionClusters(faces);
+  if(!clusters.length) return faces;
+  const primary=choosePrimaryCluster(clusters, anchorFaceIndex, localPoint, subgroup);
+  if(!primary) return faces;
+
+  // Chỉ giữ cụm lớn, đúng hình vật thể, không kéo theo mảnh lẻ xung quanh.
+  if(key==='column') return primary.faces;
+
+  const threshold = key==='base' ? .05 : .08;
+  const sizeRatio = key==='base' ? .18 : .18;
+  const keep=[];
+  for(const c of clusters){
+    const dx=c.norm.x-primary.norm.x, dy=c.norm.y-primary.norm.y, dz=c.norm.z-primary.norm.z;
+    const dist=Math.hypot(dx,dy,dz);
+    if(c===primary || (dist<=threshold && c.size>=primary.size*sizeRatio)) keep.push(...c.faces);
+  }
+  return keep.length ? keep : primary.faces;
+}
+
+function trimDoorFaces(region){
+  const b=region?.bounds || computeBoundsForFaces(region?.faces || []);
+  const side=region?.sideCode || detectDoorSide(b, region?.norm || {x:.5,y:.5,z:.5}).code;
+  const faces=(region?.faces||[]).filter(f=>{
+    if(semanticFaceLabels[f] !== 'door') return false;
+    const np=faceNormalized(f);
+    if(np.x < b.nmin.x-.015 || np.x > b.nmax.x+.015) return false;
+    if(np.y < b.nmin.y-.02 || np.y > b.nmax.y+.02) return false;
+    if(np.z < b.nmin.z-.015 || np.z > b.nmax.z+.015) return false;
+    if(side==='front' && np.z<0.50) return false;
+    if(side==='back'  && np.z>0.50) return false;
+    if(side==='left'  && np.x>0.50) return false;
+    if(side==='right' && np.x<0.50) return false;
+    return true;
+  });
+  const clusters=buildSelectionClusters(faces).sort((a,b)=>b.size-a.size);
+  return clusters.length ? clusters[0].faces : faces;
+}
+function trimColumnFaces(region, localPoint=null, anchorFaceIndex=null){
+  const b=region?.bounds || computeBoundsForFaces(region?.faces || []);
+  const side=region?.sideCode || detectColumnSide(b, region?.norm || {x:.5,y:.5,z:.5}).code;
+  const cx=(b.nmin.x+b.nmax.x)/2, cz=(b.nmin.z+b.nmax.z)/2;
+  const halfX=Math.min(0.07, Math.max(0.02, (b.nmax.x-b.nmin.x)/2 + 0.004));
+  const halfZ=Math.min(0.07, Math.max(0.02, (b.nmax.z-b.nmin.z)/2 + 0.004));
+  const yMin=Math.max(b.nmin.y, 0.12);
+  let faces=(region?.faces||[]).filter(f=>{
+    if(semanticFaceLabels[f] !== 'column') return false;
+    const np=faceNormalized(f);
+    if(np.y < yMin-0.004 || np.y > b.nmax.y+0.02) return false;
+    if(side==='front' || side==='back'){
+      if(Math.abs(np.x-cx) > halfX) return false;
+      if(np.z < b.nmin.z-.01 || np.z > b.nmax.z+.01) return false;
+      if(side==='front' && np.z<0.48) return false;
+      if(side==='back' && np.z>0.52) return false;
+    }else{
+      if(Math.abs(np.z-cz) > halfZ) return false;
+      if(np.x < b.nmin.x-.01 || np.x > b.nmax.x+.01) return false;
+      if(side==='left' && np.x>0.52) return false;
+      if(side==='right' && np.x<0.48) return false;
+    }
+    return true;
+  });
+  const clusters=buildSelectionClusters(faces).sort((a,b)=>b.size-a.size);
+  if(!clusters.length) return faces;
+  const primary=choosePrimaryCluster(clusters, anchorFaceIndex, localPoint, region);
+  return primary?.faces || clusters[0].faces;
+}
+function trimStairFaces(region){
+  const b=region?.bounds || computeBoundsForFaces(region?.faces || []);
+  const side=region?.sideCode || ((region?.norm?.z||.5)>=.5 ? 'front' : 'back');
+  let faces=(region?.faces||[]).filter(f=>{
+    if(semanticFaceLabels[f] !== 'stairs') return false;
+    const np=faceNormalized(f);
+    if(np.x < b.nmin.x-.01 || np.x > b.nmax.x+.01) return false;
+    if(np.y < b.nmin.y-.01 || np.y > Math.min(0.36, b.nmax.y+0.01)) return false;
+    if(np.z < b.nmin.z-.01 || np.z > b.nmax.z+.01) return false;
+    if(side==='front' && np.z<0.50) return false;
+    if(side==='back' && np.z>0.50) return false;
+    return true;
+  });
+  const clusters=buildSelectionClusters(faces).sort((a,b)=>b.size-a.size);
+  return clusters.length ? clusters[0].faces : faces;
+}
+
+
+
+function faceClusterFromCandidates(candidateFaces, hitFaceIndex, localPoint){
+  if(!candidateFaces?.length) return [];
+  const clusters=buildSelectionClusters([...new Set(candidateFaces)]);
+  if(!clusters.length) return [];
+  let chosen=null;
+  if(hitFaceIndex!=null) chosen=clusters.find(c=>c.faceSet.has(hitFaceIndex))||null;
+  if(!chosen){
+    let best=Infinity;
+    for(const c of clusters){
+      const d=c.center.distanceToSquared(localPoint);
+      if(d<best){best=d;chosen=c;}
+    }
+  }
+  return chosen?.faces||[];
+}
+function doorSlotFromPoint(np){
+  const band=DOOR_LEVEL_BANDS.find(b=>np.y>=b.yMin-.025 && np.y<=b.yMax+.025) || null;
+  if(!band) return null;
+  if(np.x>=.30 && np.x<=.70){
+    if(np.z<=.44) return {sideCode:'front',band};
+    if(np.z>=.56) return {sideCode:'back',band};
+  }
+  if(np.z>=.30 && np.z<=.70){
+    if(np.x<=.44) return {sideCode:'left',band};
+    if(np.x>=.56) return {sideCode:'right',band};
+  }
+  return null;
+}
+function localSemanticVote(hitFaceIndex, depth=2){
+  const counts={door:0,column:0,stairs:0,base:0,finial:0,body:0,roof:0,ornament:0};
+  if(hitFaceIndex==null || hitFaceIndex<0) return counts;
+  let frontier=[hitFaceIndex], seen=new Set([hitFaceIndex]);
+  for(let d=0; d<=depth && frontier.length; d++){
+    const next=[];
+    for(const f of frontier){
+      const k=semanticFaceLabels[f]||'body';
+      counts[k]=(counts[k]||0)+(depth-d+1);
+      for(const nb of faceNeighbors[f]||[]){ if(!seen.has(nb)){seen.add(nb);next.push(nb);} }
+    }
+    frontier=next;
+  }
+  return counts;
+}
+function dominantLocalSemantic(hitFaceIndex){
+  const counts=localSemanticVote(hitFaceIndex,2);
+  let best='body', n=-1;
+  for(const k of ['stairs','base','finial','door','column','body','roof','ornament']){
+    if((counts[k]||0)>n){n=counts[k]||0;best=k;}
+  }
+  return {key:best,counts};
+}
+function normalizedBoundsDistance(np,b){
+  if(!b) return Infinity;
+  const dx=np.x<b.nmin.x?b.nmin.x-np.x:np.x>b.nmax.x?np.x-b.nmax.x:0;
+  const dy=np.y<b.nmin.y?b.nmin.y-np.y:np.y>b.nmax.y?np.y-b.nmax.y:0;
+  const dz=np.z<b.nmin.z?b.nmin.z-np.z:np.z>b.nmax.z?np.z-b.nmax.z:0;
+  return Math.hypot(dx,dy,dz);
+}
+function dynamicDoorRegion(localPoint, hitFaceIndex=null){
+  const np=normalizedPoint(localPoint), slot=doorSlotFromPoint(np);
+  if(!slot) return null;
+  const local=dominantLocalSemantic(hitFaceIndex);
+  if(hitFaceIndex!=null && local.key==='column' && (local.counts.column||0)>(local.counts.door||0)*1.15) return null;
+  const sideCode=slot.sideCode, band=slot.band;
+  const candidate=[];
+  for(let f=0;f<faceCenters.length;f++){
+    if(semanticFaceLabels[f]!=='door') continue;
+    const fp=faceNormalized(f);
+    if(fp.y<band.yMin-.035 || fp.y>band.yMax+.035) continue;
+    if(sideCode==='front'){
+      if(fp.z>.50 || Math.abs(fp.z-np.z)>.15 || fp.x<.26 || fp.x>.74) continue;
+    }else if(sideCode==='back'){
+      if(fp.z<.50 || Math.abs(fp.z-np.z)>.15 || fp.x<.26 || fp.x>.74) continue;
+    }else if(sideCode==='left'){
+      if(fp.x>.50 || Math.abs(fp.x-np.x)>.15 || fp.z<.26 || fp.z>.74) continue;
+    }else if(sideCode==='right'){
+      if(fp.x<.50 || Math.abs(fp.x-np.x)>.15 || fp.z<.26 || fp.z>.74) continue;
+    }
+    candidate.push(f);
+  }
+  let faces=faceClusterFromCandidates(candidate,hitFaceIndex,localPoint);
+  if(!faces.length && candidate.length){
+    const clusters=buildSelectionClusters(candidate).sort((a,b)=>a.center.distanceToSquared(localPoint)-b.center.distanceToSquared(localPoint));
+    faces=clusters[0]?.faces||[];
+  }
+  faces=faces.filter(f=>semanticFaceLabels[f]==='door');
+  if(!faces.length) return null;
+  const bounds=computeBoundsForFaces(faces);
+  const center=new THREE.Vector3(); faces.forEach(f=>center.add(faceCenters[f])); center.multiplyScalar(1/faces.length);
+  const norm=normalizedPoint(center);
+  const sizeLabel=band.code==='duoi'?'lớn':'nhỏ';
+  return {id:`door-dynamic-${sideCode}-${band.code}`,faces:[...new Set(faces)],center,norm,bounds,sideCode,sideName:sideShortName(sideCode),level:band.label,levelCode:band.code,size:faces.length,sizeLabel,title:doorTitle(sideCode,band,0,sizeLabel),tag:'CỬA THÁP',dynamic:true};
+}
+function columnTrackFromPoint(np){
+  if(np.y<.12 || np.y>.93) return null;
+  const candidates=[];
+  if(np.z<=.52){
+    if(np.x<.36) candidates.push({sideCode:'front',lateralCode:'left'});
+    if(np.x>.64) candidates.push({sideCode:'front',lateralCode:'right'});
+  }
+  if(np.z>=.48){
+    if(np.x<.36) candidates.push({sideCode:'back',lateralCode:'left'});
+    if(np.x>.64) candidates.push({sideCode:'back',lateralCode:'right'});
+  }
+  if(np.x<=.52){
+    if(np.z<.36) candidates.push({sideCode:'left',lateralCode:'front'});
+    if(np.z>.64) candidates.push({sideCode:'left',lateralCode:'back'});
+  }
+  if(np.x>=.48){
+    if(np.z<.36) candidates.push({sideCode:'right',lateralCode:'front'});
+    if(np.z>.64) candidates.push({sideCode:'right',lateralCode:'back'});
+  }
+  if(!candidates.length) return null;
+  const faceScores={front:1-np.z,back:np.z,left:1-np.x,right:np.x};
+  candidates.sort((a,b)=>faceScores[b.sideCode]-faceScores[a.sideCode]);
+  return candidates[0];
+}
+function dynamicColumnRegion(localPoint, hitFaceIndex=null){
+  const np=normalizedPoint(localPoint), track=columnTrackFromPoint(np);
+  if(!track) return null;
+  const local=dominantLocalSemantic(hitFaceIndex);
+  if(hitFaceIndex!=null && local.key==='door' && (local.counts.door||0)>(local.counts.column||0)*1.15) return null;
+  const candidate=[];
+  const axisHalf=.095, depthHalf=.14;
+  for(let f=0;f<faceCenters.length;f++){
+    if(semanticFaceLabels[f]!=='column') continue;
+    const fp=faceNormalized(f);
+    if(fp.y<.115 || fp.y>.94) continue;
+    if(track.sideCode==='front' || track.sideCode==='back'){
+      if(Math.abs(fp.x-np.x)>axisHalf || Math.abs(fp.z-np.z)>depthHalf) continue;
+      if(track.sideCode==='front' && fp.z>.56) continue;
+      if(track.sideCode==='back' && fp.z<.44) continue;
+    }else{
+      if(Math.abs(fp.z-np.z)>axisHalf || Math.abs(fp.x-np.x)>depthHalf) continue;
+      if(track.sideCode==='left' && fp.x>.56) continue;
+      if(track.sideCode==='right' && fp.x<.44) continue;
+    }
+    candidate.push(f);
+  }
+  let faces=faceClusterFromCandidates(candidate,hitFaceIndex,localPoint);
+  if(!faces.length && candidate.length){
+    const clusters=buildSelectionClusters(candidate).sort((a,b)=>a.center.distanceToSquared(localPoint)-b.center.distanceToSquared(localPoint));
+    faces=clusters[0]?.faces||[];
+  }
+  faces=faces.filter(f=>semanticFaceLabels[f]==='column');
+  if(!faces.length) return null;
+  const bounds=computeBoundsForFaces(faces);
+  const center=new THREE.Vector3(); faces.forEach(f=>center.add(faceCenters[f])); center.multiplyScalar(1/faces.length);
+  const norm=normalizedPoint(center);
+  return {id:`column-dynamic-${track.sideCode}-${track.lateralCode}`,faces:[...new Set(faces)],center,norm,bounds,sideCode:track.sideCode,sideName:sideShortName(track.sideCode),lateralCode:track.lateralCode,lateralName:track.lateralCode,size:faces.length,kindCode:'generic',kindLabel:'Cột tháp',title:'Cột tháp',tag:'CỘT / TRỤ',dynamic:true};
+}
+function pointInBounds(np, b, padX=.012, padY=.014, padZ=.012){
+  return !!b && np.x>=b.nmin.x-padX && np.x<=b.nmax.x+padX && np.y>=b.nmin.y-padY && np.y<=b.nmax.y+padY && np.z>=b.nmin.z-padZ && np.z<=b.nmax.z+padZ;
+}
+function findDoorRegionStrict(localPoint,hitFaceIndex=null){
+  const np=normalizedPoint(localPoint);
+  const local=dominantLocalSemantic(hitFaceIndex);
+  let best=null,bestScore=Infinity;
+  for(const r of doorRegions){
+    const b=r.bounds;
+    if(!pointInBounds(np,b,.010,.014,.010)) continue;
+    const score=normalizedBoundsDistance(np,b)*4 + Math.abs(np.x-r.norm.x)+Math.abs(np.y-r.norm.y)*.55+Math.abs(np.z-r.norm.z);
+    if(score<bestScore){bestScore=score;best=r;}
+  }
+  if(best && !(local.key==='column' && (local.counts.column||0)>(local.counts.door||0)*1.2)) return best;
+  return dynamicDoorRegion(localPoint,hitFaceIndex);
+}
+function findColumnRegionStrict(localPoint,hitFaceIndex=null){
+  const np=normalizedPoint(localPoint);
+  if(np.y<.115) return null;
+  const local=dominantLocalSemantic(hitFaceIndex);
+  let best=null,bestScore=Infinity;
+  for(const r of columnRegions){
+    const b=r.bounds;
+    if(!pointInBounds(np,b,.030,.032,.030)) continue;
+    const score=normalizedBoundsDistance(np,b)*4 + ((r.sideCode==='front'||r.sideCode==='back')
+      ? Math.abs(np.x-r.norm.x)+Math.abs(np.z-r.norm.z)*.70+Math.abs(np.y-r.norm.y)*.04
+      : Math.abs(np.z-r.norm.z)+Math.abs(np.x-r.norm.x)*.70+Math.abs(np.y-r.norm.y)*.04);
+    if(score<bestScore){bestScore=score;best=r;}
+  }
+  if(best && !(local.key==='door' && (local.counts.door||0)>(local.counts.column||0)*1.2)) return best;
+  return dynamicColumnRegion(localPoint,hitFaceIndex);
+}
+function findStairRegionStrict(localPoint){
+  const np=normalizedPoint(localPoint);
+  let best=null, bestScore=Infinity;
+  for(const r of stairRegions){
+    const b=r.bounds;
+    if(!pointInBounds(np,b,.014,.012,.014)) continue;
+    const score=Math.abs(np.x-r.norm.x)+Math.abs(np.y-r.norm.y)*0.3+Math.abs(np.z-r.norm.z);
+    if(score<bestScore){ bestScore=score; best=r; }
+  }
+  return best;
+}
+function findBasePieceStrict(localPoint){
+  const np=normalizedPoint(localPoint);
+  if(findStairRegionStrict(localPoint)) return null;
+  const isBase = np.y<=0.115 || (np.y<=0.19 && (np.x<=0.22 || np.x>=0.78 || np.z<=0.22 || np.z>=0.78));
+  if(!isBase) return null;
+  const piece=majorParts.find(p=>p.id==='base-all') || majorParts.find(p=>p.key==='base');
+  return piece || null;
+}
+function findFinialPieceStrict(localPoint){
+  const np=normalizedPoint(localPoint);
+  if(np.y<0.90) return null;
+  return majorParts.find(p=>p.id==='finial-top') || majorParts.find(p=>p.key==='finial') || null;
+}
+function clonePieceWithRegion(basePiece, region, key){
+  if(basePiece){
+    return {...basePiece, region, key:key||basePiece.key, title:region?.title || basePiece.title, selectFaces: region?.faces ? [...region.faces] : [...(basePiece.selectFaces||[])]};
+  }
+  return {id:region?.id||key, key:key||region?.key, title:region?.title||'', order:0, faces:[...(region?.faces||[])], selectFaces:[...(region?.faces||[])], explodeFaces:[...(region?.faces||[])], components:[], center:region?.center?.clone?.()||new THREE.Vector3(), weight:1, region};
+}
+function resolveStrictPieceForHit(localPoint, hitFaceIndex){
+  const local=dominantLocalSemantic(hitFaceIndex);
+  const finialPiece=findFinialPieceStrict(localPoint);
+  if(finialPiece || local.key==='finial') return finialPiece;
+  const stairRegion=findStairRegionStrict(localPoint);
+  if(stairRegion && (local.key==='stairs' || local.key==='base' || local.key==='body')){
+    const bp=majorParts.find(p=>p.id===stairRegion.id) || majorParts.find(p=>p.key==='stairs');
+    return clonePieceWithRegion(bp,stairRegion,'stairs');
+  }
+  const basePiece=findBasePieceStrict(localPoint);
+  if(basePiece && local.key!=='door' && local.key!=='column') return basePiece;
+
+  const doorRegion=findDoorRegionStrict(localPoint,hitFaceIndex);
+  const columnRegion=findColumnRegionStrict(localPoint,hitFaceIndex);
+  const doorVotes=local.counts.door||0, columnVotes=local.counts.column||0;
+  let chosenType=null;
+  if(local.key==='door' && doorRegion) chosenType='door';
+  else if(local.key==='column' && columnRegion) chosenType='column';
+  else if(doorRegion && columnRegion){
+    if(columnVotes>doorVotes*1.12) chosenType='column';
+    else if(doorVotes>columnVotes*1.12) chosenType='door';
+    else {
+      const np=normalizedPoint(localPoint);
+      chosenType=normalizedBoundsDistance(np,columnRegion.bounds)<normalizedBoundsDistance(np,doorRegion.bounds)?'column':'door';
+    }
+  }else if(doorRegion) chosenType='door';
+  else if(columnRegion) chosenType='column';
+
+  if(chosenType==='door'){
+    const bp=majorParts.find(p=>p.id===doorRegion.id) || majorParts.find(p=>p.key==='door' && p.region?.id===doorRegion.id) || majorParts.find(p=>p.key==='door');
+    return clonePieceWithRegion(bp,doorRegion,'door');
+  }
+  if(chosenType==='column'){
+    const bp=majorParts.find(p=>p.id===columnRegion.id) || majorParts.find(p=>p.key==='column' && p.region?.id===columnRegion.id) || majorParts.find(p=>p.key==='column');
+    return clonePieceWithRegion(bp,columnRegion,'column');
+  }
+  return basePiece || null;
+}
+
+function collectPatchData(hitFaceIndex, localPoint, detail, ci){
+  const key=detail.key;
+  if(GLOBAL_GROUP_KEYS.has(key)) return {faces:[...(semanticGroups[key]||[])], subgroup:null};
+  if(key==='door'){
+    const region=findDoorRegionForPoint(localPoint);
+    if(region) return {faces:[...region.faces], subgroup:null, doorRegion:region};
+  }
+  if(key==='column'){
+    const best=findNearestSemanticSubgroup(key, localPoint);
+    if(best) return {faces:expandSemanticSelection(key,best,localPoint), subgroup:best};
+  }
+  return {faces:hitFaceIndex!=null?[hitFaceIndex]:[], subgroup:null};
+}
+
+function semanticFaces(detail, localPoint){
+  return semanticGroups[detail.key] ? [...semanticGroups[detail.key]] : [];
+}
+
+function semanticOffsetDirection(detail, localPoint){
+  if(detail.key==='door'||detail.key==='stairs') return new THREE.Vector3(0,0,-1);
+  if(detail.key==='base') return new THREE.Vector3(0,-.18,0);
+  if(detail.key==='roof'||detail.key==='finial') return new THREE.Vector3(0,1,0);
+  const d=localPoint.clone();d.y*=.18;if(d.lengthSq()<1e-6)d.set(0,0,-1);return d.normalize();
+}
+
+function buildPreciseSelection(piece, localPoint, hitFaceIndex, ci){
+  const baseDetail={key:piece.key,...DETAIL_DB[piece.key],title:piece.title||DETAIL_DB[piece.key]?.title||piece.key,tag:DETAIL_DB[piece.key]?.tag||'BÀI HỌC',y:normalizedPoint(localPoint).y};
+  let detail=baseDetail;
+  let faceIds=[...(piece.selectFaces||[])];
+  let region=null;
+
+  if(piece.key==='door'){
+    region=piece.region || findDoorRegionStrict(localPoint,hitFaceIndex) || findDoorRegionForPoint(localPoint);
+    if(region?.faces?.length) faceIds=region.dynamic?[...region.faces]:trimDoorFaces(region);
+    if(region?.title) detail={...detail,title:region.title,tag:'CỬA THÁP'};
+  }else if(piece.key==='column'){
+    region=piece.region || findColumnRegionStrict(localPoint,hitFaceIndex) || findColumnRegionForPoint(localPoint);
+    if(region?.faces?.length) faceIds=region.dynamic?[...region.faces]:trimColumnFaces(region, localPoint, hitFaceIndex);
+    if(region){ detail={...detail,title:'Cột tháp',tag:'CỘT / TRỤ',desc:'Đây là một cột tháp. Ứng dụng chỉ làm sáng đúng phần cột vừa được chọn.',recognize:'Cột tháp là dải kiến trúc đứng, chạy theo chiều cao và thường nằm gần góc hoặc kề bên cửa.',role:'Cột giúp chia nhịp mặt đứng và làm rõ cấu trúc của tháp.',material:'Gạch nung đỏ với các gờ chỉ và phần đầu cột tạo hình nhô ra.',build:'Một cột tháp thường có chân cột, thân cột và đầu cột.',remember:`Tổng cộng mô hình học tập quy ước ${COLUMN_TOTAL} cột tháp: ${COLUMN_LIST_TEXT}.`}; }
+  }else if(piece.key==='stairs'){
+    region=piece.region || findStairRegionForPoint(localPoint);
+    if(region?.faces?.length) faceIds=trimStairFaces(region);
+    if(region?.title){
+      const isFront = region.sideCode==='front';
+      detail={
+        ...detail,
+        title:region.title,
+        tag:'CẦU THANG',
+        desc:isFront
+          ? 'Đây là cầu thang cửa trước của tháp. Vùng được chọn chỉ gồm khung bậc thang ở phần đáy, dẫn lên cửa trước.'
+          : 'Đây là cầu thang cửa sau của tháp. Vùng được chọn chỉ gồm khung bậc thang ở phần đáy, không gồm cửa và cột cửa.',
+        recognize:isFront
+          ? 'Là cụm bậc đi lên ở mặt trước, nằm ở đáy và bám theo trục cửa trước.'
+          : 'Là cụm bậc đi lên ở mặt sau, nằm ở đáy và bám theo trục cửa sau.',
+        role:isFront
+          ? 'Dẫn lối tiếp cận cửa trước của tháp.'
+          : 'Dẫn lối tiếp cận cửa sau của tháp.',
+        remember:isFront
+          ? 'Cửa có cầu thang trong hình này là cửa trước. Chỉ làm sáng khung cầu thang ở đáy.'
+          : 'Chỉ làm sáng khung cầu thang ở đáy, không lan sang cửa và cột cửa.'
+      };
+    }
+  }else if(piece.key==='base'){
+    detail={...detail,title:'Đế tháp / bệ tháp',tag:'ĐẾ THÁP'};
+  }else if(piece.key==='finial'){
+    detail={...detail,title:'Chóp tháp',tag:'CHÓP THÁP'};
+  }
+
+  if(!faceIds.length && region?.faces?.length){
+    faceIds=[...region.faces];
+  }else if(!region && ['base','stairs','column'].includes(piece.key)){
+    faceIds=refineSelectionFaces(piece.key, faceIds, hitFaceIndex, localPoint, region||null);
+  }
+  return {detail, faceIds:[...new Set(faceIds)], region};
+}
+
+
+
+function createSelectionMaterial(){
+  const mat=new THREE.MeshStandardMaterial({color:0x7ff9ff,emissive:0x00aeba,emissiveIntensity:1.0,metalness:.08,roughness:.34,transparent:true,opacity:.48,side:THREE.DoubleSide,depthTest:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2.5,polygonOffsetUnits:-2.5});
+  return mat;
+}
+
+const raycaster=new THREE.Raycaster(), mouse=new THREE.Vector2();
+renderer.domElement.addEventListener('pointerdown',(ev)=>{ if(ev.button!==0)return; renderer.domElement.dataset.downX=ev.clientX;renderer.domElement.dataset.downY=ev.clientY;});
+renderer.domElement.addEventListener('pointerup',(ev)=>{
+  const dx=ev.clientX-(+renderer.domElement.dataset.downX||ev.clientX), dy=ev.clientY-(+renderer.domElement.dataset.downY||ev.clientY); if(Math.hypot(dx,dy)>5)return;
+  mouse.x=(ev.clientX/innerWidth)*2-1; mouse.y=-(ev.clientY/innerHeight)*2+1; raycaster.setFromCamera(mouse,camera);
+  const targets=[];
+  if(explodeAmount>.001 && explodedGroup) targets.push(...explodedGroup.children);
+  else if(originalMesh) targets.push(originalMesh);
+  const hits=raycaster.intersectObjects(targets,false);
+  if(!hits.length){clearSelection();return;}
+
+  let chosen=null, chosenPart=null;
+  for(const h of hits){
+    if(Number.isInteger(h.object?.userData?.majorPartIndex)){
+      const pi=h.object.userData.majorPartIndex;
+      if(pi>=0 && majorParts[pi] && isAllowedPieceKey(majorParts[pi].key) && !NON_CLICKABLE_MAJOR_KEYS.has(majorParts[pi].key)){
+        chosen=h; chosenPart=majorParts[pi]; break;
+      }
+    }else if(h.object===originalMesh){
+      const localOnOriginal=originalMesh.worldToLocal(h.point.clone());
+      const strictPiece=resolveStrictPieceForHit(localOnOriginal, h.faceIndex);
+      if(strictPiece && isAllowedPieceKey(strictPiece.key) && !NON_CLICKABLE_MAJOR_KEYS.has(strictPiece.key)){
+        chosen=h; chosenPart=strictPiece; break;
+      }
+    }
+  }
+  if(!chosen || !chosenPart){clearSelection();return;}
+  selectHit(chosen,chosenPart);
+});
+function selectHit(hit,forcedPart=null){
+  clearSelection(false);
+  const obj=hit.object;
+  let pi=-1;
+  if(Number.isInteger(obj?.userData?.majorPartIndex)) pi=obj.userData.majorPartIndex;
+  else if(hit.faceIndex!=null && faceMajorPart) pi=faceMajorPart[hit.faceIndex];
+  const piece=forcedPart || (pi>=0?majorParts[pi]:null);
+  if(!piece || !isAllowedPieceKey(piece.key) || NON_CLICKABLE_MAJOR_KEYS.has(piece.key)){clearSelection();return;}
+
+  const semanticFromExplode=Number.isInteger(obj?.userData?.majorPartIndex);
+  const localOnOriginal=semanticFromExplode
+    ? (obj.userData.groupCenter?.clone() || piece.center.clone())
+    : originalMesh.worldToLocal(hit.point.clone());
+  const ci=(!semanticFromExplode && faceComponent && hit.faceIndex!=null)?faceComponent[hit.faceIndex]:-1;
+
+  const precise=buildPreciseSelection(piece, localOnOriginal, hit.faceIndex, ci);
+  const detail=precise.detail;
+  const faceIds=precise.faceIds;
+
+  if(semanticFromExplode){
+    focusExplodedChild(obj);
+  }else if(faceIds.length){
+    const geom=createFaceGeometry(faceIds);
+    selectedOverlay=new THREE.Mesh(geom,createSelectionMaterial());
+    selectedOverlay.renderOrder=7;
+    selectedOverlay.frustumCulled=false;
+    originalMesh.parent.add(selectedOverlay);
+    selectedOverlay.position.set(0,0,0);
+    const edgeGeo=new THREE.EdgesGeometry(geom,24);
+    selectedOutline=new THREE.LineSegments(edgeGeo,new THREE.LineBasicMaterial({color:0xb7ffff,transparent:true,opacity:.95,depthTest:true}));
+    selectedOutline.renderOrder=8;
+    selectedOverlay.add(selectedOutline);
+  }
+
+  marker=new THREE.Mesh(new THREE.SphereGeometry(maxDim*.011,18,12),new THREE.MeshBasicMaterial({color:0xffdf61,transparent:true,opacity:.98,depthTest:false}));
+  marker.position.copy(hit.point);marker.renderOrder=10;scene.add(marker);selectedWorldPoint=hit.point.clone();
+  showInfo(detail,ci,localOnOriginal,faceIds.length);
+}
+
+function showInfo(detail,ci,p,faceCount){
+  document.getElementById('zoneTag').textContent=detail.tag;
+  document.getElementById('zoneTitle').textContent=detail.title;
+  document.getElementById('zoneDesc').textContent=detail.desc;
+  document.getElementById('learnRecognize').textContent=detail.recognize||'—';
+  document.getElementById('learnRole').textContent=detail.role||'—';
+  document.getElementById('learnMaterial').textContent=detail.material||'—';
+  document.getElementById('learnBuild').textContent=detail.build||'—';
+  document.getElementById('learnRemember').textContent=detail.remember||'—';
+  const img=document.getElementById('partImage');img.src=PART_IMAGES[detail.imageKey]||PART_IMAGES.body;img.alt='Hình minh họa '+detail.title;
+  document.getElementById('partImageCaption').textContent='Hình minh họa · '+detail.title;
+  info.classList.add('show');connectorLine.classList.add('show');
+}
+
+function clearSelection(hide=true){
+  if(selectedOverlay){
+    if(selectedOutline){selectedOverlay.remove(selectedOutline);selectedOutline.geometry.dispose();selectedOutline.material.dispose();selectedOutline=null;}
+    selectedOverlay.parent?.remove(selectedOverlay);selectedOverlay.geometry.dispose();selectedOverlay.material.dispose?.();selectedOverlay=null;
+  }
+  if(selectedExplodedOutline){
+    selectedExplodedOutline.parent?.remove(selectedExplodedOutline);
+    selectedExplodedOutline.geometry?.dispose?.();
+    selectedExplodedOutline.material?.dispose?.();
+    selectedExplodedOutline=null;
+  }
+  selectedExplodedChild=null;
+  if(explodedGroup&&explodeAmount>.001) applyExplodedLayout();
+  if(marker){scene.remove(marker);marker.geometry.dispose();marker.material.dispose();marker=null;}
+  selectedWorldPoint=null;connectorLine.classList.remove('show');if(hide)info.classList.remove('show');
+}
+
+function setView(v){
+  clearSelection(); controls.autoRotate=false; document.getElementById('btnAuto').classList.remove('active');
+  const d=maxDim*1.78, y=modelHeight*.03; const target=new THREE.Vector3();
+  if(v==='front'){camera.position.set(0,y,-d);frontZSign=-1;}
+  if(v==='back'){camera.position.set(0,y,d);frontZSign=1;}
+  if(v==='left'){camera.position.set(-d*.9,y,0);}
+  if(v==='right'){camera.position.set(d*.9,y,0);}
+  camera.lookAt(target); controls.target.copy(target); orbitTargetGoal.copy(target); controls.update();
+}
+
+function focusRegion(key){
+  const d=DETAIL_DB[key];if(!d)return;showInfo({...d,key,y:0},-1,new THREE.Vector3(),0);
+}
+function focusSemantic(key){focusRegion(key);}
+
+function updateConnector(){
+
+  if(!selectedWorldPoint || !info.classList.contains('show')) return;
+  const p=selectedWorldPoint.clone().project(camera),x=(p.x*.5+.5)*innerWidth,y=(-p.y*.5+.5)*innerHeight;
+  const r=info.getBoundingClientRect(),x2=r.left,y2=r.top+Math.min(r.height*.34,120);
+  connectorLine.setAttribute('x1',x);connectorLine.setAttribute('y1',y);connectorLine.setAttribute('x2',x2);connectorLine.setAttribute('y2',y2);
+}
+
+// UI
+const btnTexture=document.getElementById('btnTexture'), btnHolo=document.getElementById('btnHolo'), btnGridMode=document.getElementById('btnGridMode');
+document.getElementById('closeInfo').onclick=()=>clearSelection();
+btnTexture.onclick=()=>{displayMode='texture';applyDisplayMode();};
+btnHolo.onclick=()=>{displayMode='holo';applyDisplayMode();};
+btnGridMode.onclick=()=>{displayMode='grid';applyDisplayMode();};
+document.getElementById('btnAuto').onclick=(e)=>{controls.autoRotate=!controls.autoRotate;e.currentTarget.classList.toggle('active',controls.autoRotate);};
+document.getElementById('btnWire').onclick=(e)=>{wireframe=!wireframe;e.currentTarget.textContent=wireframe?'Bật':'Tắt';e.currentTarget.classList.toggle('active',wireframe);applyDisplayMode();};
+document.getElementById('explodeRange').oninput=(e)=>updateExplosion(+e.target.value/100);
+document.getElementById('btnReset').onclick=()=>setView('front');
+document.getElementById('btnFull').onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.();};
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+document.querySelectorAll('[data-focus]').forEach(b=>b.onclick=()=>focusRegion(b.dataset.focus));
+document.querySelectorAll('[data-semantic]').forEach(b=>b.onclick=()=>{selectionLevel='semantic';focusSemantic(b.dataset.semantic);});
+const diagramModal=document.getElementById('diagramModal');
+function hydrateDiagramPartImages(){
+  diagramModal.querySelectorAll('img[data-part-image]').forEach(img=>{
+    const key=img.dataset.partImage;
+    if(PART_IMAGES[key] && img.dataset.loaded!=='1'){
+      img.src=PART_IMAGES[key];
+      img.dataset.loaded='1';
+    }
+  });
+}
+document.getElementById('btnDiagram').onclick=()=>{hydrateDiagramPartImages();diagramModal.classList.add('show');};
+document.getElementById('closeDiagram').onclick=()=>diagramModal.classList.remove('show');
+diagramModal.addEventListener('click',(e)=>{if(e.target===diagramModal)diagramModal.classList.remove('show');});
+const historyModal=document.getElementById('historyModal');
+document.getElementById('btnHistory').onclick=()=>historyModal.classList.add('show');
+document.getElementById('closeHistory').onclick=()=>historyModal.classList.remove('show');
+historyModal.addEventListener('click',(e)=>{if(e.target===historyModal)historyModal.classList.remove('show');});
+
+const clock=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  controls.update();
+  if(ringGroup){ringGroup.children.forEach((o)=>{if(o.geometry?.type==='TorusGeometry')o.rotation.z=t*(o.userData.speed||.1);});}
+  if(particles)particles.rotation.y=t*.035;
+  if(marker){const s=1+.25*Math.sin(t*7);marker.scale.setScalar(s);}
+  if(explodedGroup&&explodeAmount>.001) applyExplodedLayout();
+  if(selectedOverlay&&selectedOverlay.userData.targetPos)selectedOverlay.position.lerp(selectedOverlay.userData.targetPos,.10);
+  updateConnector(); renderer.render(scene,camera);
+}
+animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script>
+<script src="config.js"></script>
+<script src="chat.js"></script>
+</body></html>

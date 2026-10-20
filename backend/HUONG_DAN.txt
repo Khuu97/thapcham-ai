@@ -1,0 +1,35 @@
+THÁP CHĂM AI – HƯỚNG DẪN ĐƯA LÊN MẠNG (khoảng 20 phút)
+
+PHẦN A. TẠO TRỢ LÝ AI (Google Sheet + Apps Script)
+1. Lấy Gemini API key: vào https://aistudio.google.com/apikey → Create API key → copy.
+2. Tạo Google Sheet mới, đặt tên "Tháp Chăm AI – Dữ liệu".
+3. Trong Sheet: Tiện ích mở rộng → Apps Script. Xóa code mẫu, dán toàn bộ file Code.gs, bấm Lưu.
+4. Bánh răng (Cài đặt dự án) → Thuộc tính tập lệnh → Thêm:  GEMINI_API_KEY  =  <key vừa copy>.
+5. Chọn hàm "setup" → Chạy → cấp quyền (Nâng cao → Đi tới… → Cho phép).
+   Chạy tiếp hàm "testChat" → xem Nhật ký thực thi phải có câu trả lời về gạch nung.
+6. Triển khai → Tùy chọn triển khai mới → loại "Ứng dụng web":
+     Thực thi với tư cách: Tôi
+     Người có quyền truy cập: Bất kỳ ai
+   → Triển khai → copy URL (đuôi /exec).
+
+PHẦN B. GẮN LINK VÀO APP
+7. Giải nén thư mục "thapcham-ai", mở file config.js bằng Notepad,
+   dán URL vào:  API_URL: 'https://script.google.com/macros/s/.../exec'   → Lưu.
+
+PHẦN C. ĐƯA APP LÊN MẠNG (Netlify, miễn phí)
+8. Vào https://app.netlify.com → đăng nhập bằng Google.
+9. Sites → "Add new site" → "Deploy manually" → kéo thả CẢ THƯ MỤC thapcham-ai vào.
+10. Site configuration → Change site name → đặt "thapcham-ai-esh" (hoặc tên khác).
+    Link sẽ là: https://thapcham-ai-esh.netlify.app
+11. Khi sửa file: Deploys → kéo thả lại thư mục.
+
+PHẦN D. LẤY MINH CHỨNG
+- Trang "Tong_hop" trong Google Sheet tự đếm: lượt mở app, câu hỏi, tỉ lệ trả lời trong tư liệu,
+  kết quả Thám tử sử liệu, điểm bằng chứng.
+- Trang "Hoi_dap" chứa từng câu hỏi của học sinh → chọn vài câu hay đưa vào slide/poster.
+- Học sinh nhập mã lớp (VD 10A1) ở góc khung Trợ lý để thống kê theo lớp. Không cần họ tên.
+
+LƯU Ý
+- Bộ tư liệu (TU_LIEU) nằm đầu file Code.gs. Thầy đọc lại, sửa cho khớp SGK.
+  Sửa xong: Triển khai → Quản lý triển khai → bút chì → Phiên bản: Phiên bản mới → Triển khai (URL giữ nguyên).
+- Gói miễn phí Gemini có giới hạn lượt/phút; mỗi máy bị giới hạn 25 câu / 10 phút để tránh spam.
