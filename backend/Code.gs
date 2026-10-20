@@ -98,6 +98,12 @@ function doPost(e) {
     var phien = clean_(req.phien, 40) || 'na';
     if (req.action === 'chat') return json_(chat_(req, lop, phien));
     if (req.action === 'judge') return json_(judge_(req, lop, phien));
+    if (req.action === 'survey') {
+      var n = function (v) { v = Number(v); return v >= 1 && v <= 5 ? v : ''; };
+      sheet_('Khao_sat', ['Thời gian', 'Lớp', 'Phiên', 'Loại', 'Tự tin nhận biết bộ phận', 'Kiểm tra lại thông tin AI', 'Hứng thú với di sản', 'App giúp hiểu bài', 'Điều học được về AI'])
+        .appendRow([new Date(), lop, phien, req.loai === 'sau' ? 'Sau' : 'Trước', n(req.c1), n(req.c2), n(req.c3), n(req.c4), clean_(req.y_kien, 300)]);
+      return json_({ ok: true });
+    }
     if (req.action === 'log') { logEvent_(lop, phien, clean_(req.su_kien, 40), clean_(req.chi_tiet, 200)); return json_({ ok: true }); }
     return json_({ ok: false, error: 'Hành động không hợp lệ' });
   } catch (err) {
@@ -199,6 +205,7 @@ function setup() {
   sheet_('Hoi_dap', ['Thời gian', 'Lớp', 'Phiên', 'Bộ phận đang chọn', 'Câu hỏi', 'Trả lời', 'Trong tư liệu', 'Nguồn']);
   sheet_('Tham_tu', ['Thời gian', 'Lớp', 'Phiên', 'Mã nhận định', 'Nhận định', 'Chọn', 'Đúng/Sai', 'Bằng chứng', 'Điểm bằng chứng (0-2)', 'Nhận xét AI']);
   sheet_('Su_dung', ['Thời gian', 'Lớp', 'Phiên', 'Sự kiện', 'Chi tiết']);
+  sheet_('Khao_sat', ['Thời gian', 'Lớp', 'Phiên', 'Loại', 'Tự tin nhận biết bộ phận', 'Kiểm tra lại thông tin AI', 'Hứng thú với di sản', 'App giúp hiểu bài', 'Điều học được về AI']);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var th = ss.getSheetByName('Tong_hop') || ss.insertSheet('Tong_hop', 0);
   th.clear();
@@ -212,12 +219,20 @@ function setup() {
     ['Số lượt làm Thám tử sử liệu', '=MAX(0,COUNTA(Tham_tu!F:F)-1)'],
     ['Tỉ lệ chọn đúng Đúng/Sai', '=IFERROR(COUNTIF(Tham_tu!G:G,"Chọn đúng")/(COUNTA(Tham_tu!G:G)-1),0)'],
     ['Điểm bằng chứng trung bình (0-2)', '=IFERROR(AVERAGE(Tham_tu!I2:I),0)'],
-    ['Tỉ lệ bằng chứng đạt 2 điểm', '=IFERROR(COUNTIF(Tham_tu!I2:I,2)/COUNT(Tham_tu!I2:I),0)']
+    ['Tỉ lệ bằng chứng đạt 2 điểm', '=IFERROR(COUNTIF(Tham_tu!I2:I,2)/COUNT(Tham_tu!I2:I),0)'],
+    ['Tỉ lệ phát hiện đúng lỗi của mô hình AI (nhận định A1–A4)', '=IFERROR(COUNTIFS(Tham_tu!D:D,"A*",Tham_tu!G:G,"Chọn đúng")/COUNTIF(Tham_tu!D:D,"A*"),0)'],
+    ['KHẢO SÁT (thang 1–5)', 'Trước | Sau'],
+    ['Tự tin nhận biết bộ phận tháp', '=IFERROR(TEXT(AVERAGEIF(Khao_sat!D:D,"Trước",Khao_sat!E:E),"0.00"),"-")&" | "&IFERROR(TEXT(AVERAGEIF(Khao_sat!D:D,"Sau",Khao_sat!E:E),"0.00"),"-")'],
+    ['Kiểm tra lại thông tin do AI đưa ra', '=IFERROR(TEXT(AVERAGEIF(Khao_sat!D:D,"Trước",Khao_sat!F:F),"0.00"),"-")&" | "&IFERROR(TEXT(AVERAGEIF(Khao_sat!D:D,"Sau",Khao_sat!F:F),"0.00"),"-")'],
+    ['Hứng thú với di sản tháp Chăm', '=IFERROR(TEXT(AVERAGEIF(Khao_sat!D:D,"Trước",Khao_sat!G:G),"0.00"),"-")&" | "&IFERROR(TEXT(AVERAGEIF(Khao_sat!D:D,"Sau",Khao_sat!G:G),"0.00"),"-")'],
+    ['App giúp hiểu bài hơn (sau)', '=IFERROR(AVERAGEIF(Khao_sat!D:D,"Sau",Khao_sat!H:H),"-")'],
+    ['Số phiếu khảo sát (trước / sau)', '=COUNTIF(Khao_sat!D:D,"Trước")&" / "&COUNTIF(Khao_sat!D:D,"Sau")']
   ];
   th.getRange(1, 1, rows.length, 2).setValues(rows);
   th.getRange('A1').setFontWeight('bold').setFontSize(14);
   th.getRange('B6').setNumberFormat('0%'); th.getRange('B8').setNumberFormat('0%'); th.getRange('B10').setNumberFormat('0%');
-  th.getRange('B9').setNumberFormat('0.00');
+  th.getRange('B9').setNumberFormat('0.00'); th.getRange('B11').setNumberFormat('0%'); th.getRange('B16').setNumberFormat('0.00');
+  th.getRange('A12:B12').setFontWeight('bold');
   th.setColumnWidth(1, 320);
 }
 

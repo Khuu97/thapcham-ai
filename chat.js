@@ -23,7 +23,7 @@
   }
   function log(su_kien, chi_tiet) {
     if (!API) return;
-    try { fetch(API, { method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify({ action: 'log', lop: lop || 'Khách', phien, su_kien, chi_tiet: chi_tiet || '' }) }); } catch (e) {}
+    try { fetch(API, { method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify({ action: 'log', lop: lop || 'Khách', phien, su_kien, chi_tiet: chi_tiet || '' }) }).catch(() => {}); } catch (e) {}
   }
 
   // ---------- Giao diện ----------
@@ -148,6 +148,33 @@
   document.getElementById('btnDiagram')?.addEventListener('click', () => log('mo_tu_lieu', 'Sơ đồ chi tiết'));
   log('mo_app', navigator.userAgent.includes('Mobi') ? 'điện thoại' : 'máy tính');
 
+
+  // ---------- Phiếu khảo sát trước / sau (minh chứng tác động) ----------
+  const SURVEY_Q = [
+    'Em tự tin nhận biết được các bộ phận chính của một tháp Chăm.',
+    'Khi AI đưa ra thông tin, em thường kiểm tra lại bằng tư liệu hoặc bằng chứng.',
+    'Em thấy di sản tháp Chăm gần gũi và muốn tìm hiểu thêm.'
+  ];
+  const SURVEY_AFTER = 'App giúp em hiểu bài hơn so với chỉ đọc sách.';
+  function survey(loai, done) {
+    const p = $('#detPane'), qs = SURVEY_Q.concat(loai === 'sau' ? [SURVEY_AFTER] : []), ans = {};
+    p.innerHTML = `<div class="detIntro"><b>${loai === 'truoc' ? '📝 Trước khi điều tra' : '📝 Sau khi điều tra'}</b><br>Chọn mức độ đồng ý: 1 = Hoàn toàn không đồng ý … 5 = Hoàn toàn đồng ý. Không cần ghi tên.</div>` +
+      qs.map((t, i) => `<div class="svQ"><div>${i + 1}. ${esc(t)}</div><div class="svRow" data-i="${i}">${[1, 2, 3, 4, 5].map((v) => `<button data-v="${v}">${v}</button>`).join('')}</div></div>`).join('') +
+      (loai === 'sau' ? `<div class="detLabel">Điều em học được về cách dùng AI khi học Lịch sử?</div><textarea id="svText" maxlength="300" style="width:100%;min-height:64px;border-radius:12px;border:1px solid rgba(104,246,255,.25);background:rgba(255,255,255,.04);color:var(--txt);padding:10px;font:inherit;font-size:12.5px"></textarea>` : '') +
+      `<button id="svGo" class="active" style="height:44px" disabled>${loai === 'truoc' ? 'Bắt đầu điều tra' : 'Gửi phiếu'}</button>
+       <button id="svSkip" style="height:34px;font-size:11px;opacity:.7">Bỏ qua</button>`;
+    p.querySelectorAll('.svRow').forEach((row) => row.querySelectorAll('button').forEach((b) => (b.onclick = () => {
+      ans[row.dataset.i] = +b.dataset.v; row.querySelectorAll('button').forEach((x) => x.classList.toggle('pick', x === b));
+      $('#svGo').disabled = Object.keys(ans).length < qs.length;
+    })));
+    const finish = (sent) => { store.set('tc_ks_' + loai, sent ? '1' : 'skip'); done(); };
+    $('#svSkip').onclick = () => finish(false);
+    $('#svGo').onclick = () => {
+      if (API) call({ action: 'survey', loai, c1: ans[0], c2: ans[1], c3: ans[2], c4: ans[3] || '', y_kien: ($('#svText') || {}).value || '' }).catch(() => {});
+      finish(true);
+    };
+  }
+
   // ---------- Thám tử sử liệu ----------
   const CLAIMS = [
     { ma: 'N1', text: 'Tháp Chăm chủ yếu được xây bằng đá ong.', dung: false, giai: 'Sai. Tháp Chăm chủ yếu xây bằng gạch nung màu đỏ, mạch ghép rất khít; đá chỉ dùng ở một số chi tiết như ngưỡng cửa, bệ, tượng.', nguon: 'T5 – Tư liệu app: Đặc điểm kiến trúc', hint: 'Bật chế độ "Bản thật", phóng to thân tháp và quan sát bề mặt.' },
@@ -161,14 +188,21 @@
     { ma: 'N9', text: 'Kiến trúc và điêu khắc Chăm chịu ảnh hưởng của văn hóa Ấn Độ.', dung: true, giai: 'Đúng. Người Chăm theo Hindu giáo, Phật giáo; chữ viết dựa trên chữ Phạn; điêu khắc có Apsara, Garuda, Naga… nhưng vẫn mang phong cách riêng.', nguon: 'T2, T10', hint: 'Mở "Sơ đồ chi tiết" xem phần hoa văn trang trí.' },
     { ma: 'N10', text: 'Chóp tháp và mái tháp là cùng một bộ phận.', dung: false, giai: 'Sai. Mái là hệ nhiều tầng thu nhỏ dần phía trên thân; chóp là bộ phận cao nhất, đặt trên tầng mái trên cùng.', nguon: 'T9 – Các bộ phận', hint: 'Click vào chóp tháp rồi so sánh với các tầng mái bên dưới.' },
     { ma: 'N11', text: 'Gopura là tháp chính, nơi đặt tượng thần để thờ.', dung: false, giai: 'Sai. Tháp chính là Kalan; Gopura là tháp cổng dẫn vào khu thờ tự.', nguon: 'T8 – Các loại công trình', hint: 'Đọc mục 4 – Các loại công trình trong quần thể.' },
-    { ma: 'N12', text: 'Mái tháp Chăm thường chia nhiều tầng, có các tháp góc nhỏ trang trí.', dung: true, giai: 'Đúng. Mái gồm nhiều tầng giật cấp thu nhỏ dần, mỗi tầng có các tháp góc nhỏ mô phỏng hình tháp chính.', nguon: 'T5, T9', hint: 'Xoay mô hình, đếm số tầng mái và quan sát các góc.' }
+    { ma: 'N12', text: 'Mái tháp Chăm thường chia nhiều tầng, có các tháp góc nhỏ trang trí.', dung: true, giai: 'Đúng. Mái gồm nhiều tầng giật cấp thu nhỏ dần, mỗi tầng có các tháp góc nhỏ mô phỏng hình tháp chính.', nguon: 'T5, T9', hint: 'Xoay mô hình, đếm số tầng mái và quan sát các góc.' },
+    { ma: 'A1', ai: true, text: 'Tháp chính (kalan) có cửa ra vào thật ở cả bốn mặt, giống như mô hình AI thể hiện.', dung: false, giai: 'Sai. Ở kalan thật, thường chỉ cửa chính (hướng đông) là cửa thật; ba mặt còn lại là cửa giả. Mô hình do AI dựng có thể thể hiện cửa giống nhau ở nhiều mặt – đó là chi tiết cần kiểm chứng, không nên tin ngay.', nguon: 'T6, T14', hint: 'Xoay mô hình xem các mặt, rồi đọc mục 6 – Ghi chú cho mô hình.' },
+    { ma: 'A2', ai: true, text: 'Lớp rêu xanh trên mô hình là một phần trang trí do người Chăm thiết kế.', dung: false, giai: 'Sai. Rêu mọc do thời gian và độ ẩm, không phải thiết kế ban đầu. AI dựng mô hình từ ảnh di tích đã xuống cấp nên "học" luôn cả rêu – ví dụ cho thấy AI chép cả những gì không phải bản chất.', nguon: 'T5, T14', hint: 'So sánh màu gạch trên mô hình với mô tả "gạch nung màu đỏ" trong tư liệu.' },
+    { ma: 'A3', ai: true, text: 'Mô hình do AI tạo từ ảnh thật thì luôn chính xác, vì AI đã "nhìn" thấy di tích.', dung: false, giai: 'Sai. AI tạo mô hình bằng cách đoán phần không thấy trong ảnh, nên có thể thêm, bớt hoặc làm sai chi tiết. Người học phải đối chiếu với tư liệu và ảnh di tích thật trước khi kết luận.', nguon: 'T14 – Ghi chú mô hình', hint: 'Tìm một chi tiết trên mô hình mà em nghi là AI làm chưa đúng.' },
+    { ma: 'A4', ai: true, text: 'Trợ lý AI trong app đôi khi có thể trả lời sai, nên câu trả lời luôn kèm nguồn để em kiểm tra.', dung: true, giai: 'Đúng. Trợ lý chỉ được dùng bộ tư liệu của lớp và phải ghi nguồn; câu nào ngoài tư liệu sẽ được đánh dấu "cần kiểm chứng". Dù vậy AI vẫn có thể sai – nhà sử học luôn hỏi "bằng chứng nào?".', nguon: 'Nguyên tắc dùng AI có trách nhiệm', hint: 'Hỏi Trợ lý một câu rồi xem phần nguồn bên dưới câu trả lời.' }
   ];
   const ROUND = 6;
   const det = {
     started: false, list: [], i: 0, pick: null, score: 0, ev: 0,
     start() {
+      if (!store.get('tc_ks_truoc', '')) return survey('truoc', () => this.start());
       this.started = true; this.i = 0; this.score = 0; this.ev = 0; this.pick = null;
-      this.list = CLAIMS.slice().sort(() => Math.random() - 0.5).slice(0, ROUND);
+      const mix = (a) => a.slice().sort(() => Math.random() - 0.5);
+      const aiC = mix(CLAIMS.filter((c) => c.ai)).slice(0, 2), base = mix(CLAIMS.filter((c) => !c.ai)).slice(0, ROUND - 2);
+      this.list = mix(aiC.concat(base));
       log('tham_tu_bat_dau', '');
       this.render();
     },
@@ -187,6 +221,7 @@
           <p style="font-size:12px;color:#9fc5ca;line-height:1.6;margin-top:14px">Nhà sử học không tin ngay mọi thông tin, kể cả thông tin do AI đưa ra. Họ luôn hỏi: <b>“Bằng chứng nào cho nhận định đó?”</b></p></div>
           <button id="detAgain" class="active" style="height:44px">Chơi lượt mới</button>`;
         $('#detAgain').onclick = () => this.start();
+        if (!store.get('tc_ks_sau', '')) { const b = document.createElement('button'); b.style.height = '40px'; b.textContent = '📝 Làm phiếu cảm nhận (1 phút)'; b.onclick = () => survey('sau', () => { this.started = true; this.render(); }); $('#detAgain').after(b); }
         log('tham_tu_ket_thuc', `${this.score}/${this.list.length}; bằng chứng ${this.ev}`);
         return;
       }

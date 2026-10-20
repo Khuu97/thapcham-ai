@@ -72,3 +72,8 @@
   .hint{display:none}
   #aiPanel{top:56px}
 }
+
+.svQ{display:grid;gap:7px;font-size:12.5px;line-height:1.5;color:#d7f3f6}
+.svRow{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.svRow button{height:36px;padding:0}
+.svRow button.pick{color:#001417;background:var(--cyan);border-color:transparent}
+#detPane>*{flex-shrink:0}
