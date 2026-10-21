@@ -2,6 +2,11 @@
 (function () {
   const CFG = window.THAPCHAM_CONFIG || {};
   const API = (CFG.API_URL || '').trim();
+  const headers = { 'Content-Type': 'application/json' };
+  if (CFG.API_ANON_KEY) {
+    headers.Authorization = 'Bearer ' + CFG.API_ANON_KEY;
+    headers.apikey = CFG.API_ANON_KEY;
+  }
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const store = {
@@ -16,14 +21,14 @@
 
   // ---------- Gọi máy chủ ----------
   async function call(payload) {
-    const r = await fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ lop: lop || 'Khách', phien }, payload)) });
+    const r = await fetch(API, { method: 'POST', headers, body: JSON.stringify(Object.assign({ lop: lop || 'Khách', phien }, payload)) });
     const data = await r.json();
     if (!data.ok) throw new Error(data.error || 'Lỗi không xác định');
     return data;
   }
   function log(su_kien, chi_tiet) {
     if (!API) return;
-    try { fetch(API, { method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify({ action: 'log', lop: lop || 'Khách', phien, su_kien, chi_tiet: chi_tiet || '' }) }).catch(() => {}); } catch (e) {}
+    try { fetch(API, { method: 'POST', headers, keepalive: true, body: JSON.stringify({ action: 'log', lop: lop || 'Khách', phien, su_kien, chi_tiet: chi_tiet || '' }) }).catch(() => {}); } catch (e) {}
   }
 
   // ---------- Giao diện ----------
