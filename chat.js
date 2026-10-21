@@ -118,7 +118,7 @@
       t.innerHTML = h;
       history.push({ role: 'user', text }, { role: 'model', text: r.tra_loi });
     } catch (e) {
-      t.className = 'msg sys'; t.innerHTML = 'Không kết nối được Trợ lý: ' + esc(e.message) + '. Em thử lại sau nhé.';
+      t.className = 'msg sys'; console.warn('Trợ lý AI lỗi:', e.message); t.innerHTML = /quá nhanh|hơi nhanh|trống/.test(e.message) ? esc(e.message) : 'Trợ lý AI đang tạm bận, em thử lại sau ít phút nhé. Trong lúc chờ, em có thể chơi <b>Thám tử sử liệu</b>.';
     }
     msgs.scrollTop = msgs.scrollHeight; busy = false;
   }
@@ -250,7 +250,7 @@
           const r = await call({ action: 'judge', ma: c.ma, nhan_dinh: c.text, dap_an: c.dung, chon: this.pick, giai_thich: c.giai, bang_chung: bc });
           this.ev += r.diem;
           aiHtml = `<div class="ai"><b>Nhận xét bằng chứng</b> <span class="stars">${'★'.repeat(r.diem)}${'☆'.repeat(2 - r.diem)}</span><br>${esc(r.nhan_xet)}${r.goi_y ? '<br><i style="color:#bfe5ea">→ ' + esc(r.goi_y) + '</i>' : ''}</div>`;
-        } catch (e) { aiHtml = `<div class="ai" style="color:#d9c98c">Chưa chấm được bằng chứng (${esc(e.message)}).</div>`; }
+        } catch (e) { console.warn('Chấm AI lỗi:', e.message); aiHtml = `<div class="ai" style="color:#d9c98c">Trợ lý AI đang tạm bận nên chưa chấm được bằng chứng. Em vẫn xem được đáp án ở trên.</div>`; }
       } else {
         log('tham_tu', `${c.ma}: ${right ? 'đúng' : 'sai'}`);
       }
