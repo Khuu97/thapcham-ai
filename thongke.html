@@ -26,11 +26,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 </style>
 </head>
 <body>
-<header><h1>📊 Thống kê sử dụng – Tháp Chăm AI</h1><p>Minh chứng tác động: lượt dùng, câu hỏi gửi Trợ lý AI, kết quả Thám tử sử liệu, khảo sát trước/sau.</p></header>
+<header><h1>📊 Thống kê sử dụng – Tháp Chăm AI</h1><p>Dữ liệu sử dụng và cảm nhận; không tự chứng minh hiệu quả học tập.</p></header>
 <main>
   <div class="card noprint">
     <div class="row">
-      <input id="ma" placeholder="Mã giáo viên" style="width:160px;text-transform:uppercase">
+      <input id="ma" type="password" placeholder="Mã giáo viên" style="width:160px;text-transform:uppercase">
       <select id="lop"><option value="">Tất cả lớp</option></select>
       <button id="go">Xem thống kê</button>
       <button id="csv" class="ghost" disabled>⬇ Tải câu hỏi (Excel/CSV)</button>
@@ -38,7 +38,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
       <span id="err"></span>
     </div>
   </div>
-  <div id="out"></div>
+  <p><a href="hoc-tap.html?teacher=1">Mở hồ sơ học tập trước–sau và đánh giá của giáo viên →</a></p><div id="out"></div>
 </main>
 <script src="config.js"></script>
 <script>
@@ -52,14 +52,14 @@ const pct=v=>Math.round((v||0)*100)+'%', num=v=>(v==null?'–':(+v).toFixed(2));
 const CLAIM={N1:'Tháp Chăm chủ yếu được xây bằng đá ong.',N2:'Thân tháp vươn cao, thu nhỏ dần khi lên cao.',N3:'Mô hình 3D là bản sao chính xác tháp Po Klong Garai.',N4:'Kalan thường chỉ có một cửa thật, các mặt khác là cửa giả.',N5:'Tháp Chăm là nơi ở của vua và hoàng tộc.',N6:'Cách kết dính gạch đã được giải thích hoàn toàn.',N7:'Mỹ Sơn được UNESCO công nhận Di sản văn hóa thế giới.',N8:'Vòm cửa tháp Chăm hình bán nguyệt tròn.',N9:'Kiến trúc Chăm chịu ảnh hưởng văn hóa Ấn Độ.',N10:'Chóp tháp và mái tháp là cùng một bộ phận.',N11:'Gopura là tháp chính đặt tượng thờ.',N12:'Mái tháp nhiều tầng, có tháp góc nhỏ.',A1:'Kalan có cửa thật ở cả bốn mặt như mô hình AI.',A2:'Rêu xanh trên mô hình là trang trí do người Chăm thiết kế.',A3:'Mô hình AI tạo từ ảnh thật luôn chính xác.',A4:'Trợ lý AI có thể sai nên luôn kèm nguồn.'};
 const KS=['Tự tin nhận biết bộ phận tháp Chăm','Kiểm tra lại thông tin do AI đưa ra','Hứng thú với di sản tháp Chăm','App giúp hiểu bài hơn (chỉ hỏi sau)'];
 let last=null;
-try{$('#ma').value=localStorage.getItem('tc_ma_gv')||''}catch(e){}
+
 async function load(){
   $('#err').textContent='';const ma=$('#ma').value.trim().toUpperCase();if(!ma){$('#err').textContent='Nhập mã giáo viên.';return}
   $('#go').disabled=true;$('#go').textContent='Đang tải…';
   try{
     const r=await fetch(API,{method:'POST',headers,body:JSON.stringify({action:'stats',ma_gv:ma,loc_lop:$('#lop').value})}).then(r=>r.json());
     if(!r.ok)throw new Error(r.error);
-    try{localStorage.setItem('tc_ma_gv',ma)}catch(e){}
+    
     last=r;render(r);$('#csv').disabled=false;$('#print').disabled=false;
   }catch(e){$('#err').textContent=e.message}
   $('#go').disabled=false;$('#go').textContent='Xem thống kê';

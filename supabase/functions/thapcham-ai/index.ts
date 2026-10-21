@@ -2,6 +2,8 @@
 // Chỉ đọc/ghi khu riêng "thapcham", không đụng dữ liệu app Quản lí học tập.
 // Bí mật cần có: GEMINI_API_KEY (Edge Functions → Secrets).
 import postgres from "npm:postgres@3.4.4";
+import { CLAIMS } from "./legacy.ts";
+import { cycle, hash, limit, teacher } from "./cycle.ts";
 
 const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { prepare: false, max: 3 });
 const MODELS = ["gemini-2.5-flash", "gemini-flash-latest"];
@@ -82,12 +84,12 @@ async function gemini(systemText: string, contents: unknown[], temperature: numb
   if (!key) throw new Error("Giáo viên chưa cài GEMINI_API_KEY cho máy chủ.");
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: systemText }] }, contents,
-    generationConfig: { temperature, maxOutputTokens: 1024, responseMimeType: "application/json" },
+    generationConfig: { temperature, maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 0 }, responseMimeType: "application/json" },
     safetySettings: ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map((category) => ({ category, threshold: "BLOCK_LOW_AND_ABOVE" })),
   });
   let last = "";
   for (const m of MODELS) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body });
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body, signal: AbortSignal.timeout(20000) });
     if (r.ok) {
       const d = await r.json();
       const text = (d.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
@@ -95,7 +97,7 @@ async function gemini(systemText: string, contents: unknown[], temperature: numb
       try { return JSON.parse(text); } catch { const mm = text.match(/\{[\s\S]*\}/); try { return mm ? JSON.parse(mm[0]) : { tra_loi: text, nhan_xet: text }; } catch { return { tra_loi: text, nhan_xet: text }; } }
     }
     last = `${r.status} ${(await r.text()).slice(0, 200)}`;
-    if (r.status !== 404 && r.status !== 400) break;
+    if (![404,400,429,500,502,503,504].includes(r.status)) break;
   }
   throw new Error("Gemini: " + last);
 }
@@ -116,11 +118,13 @@ async function chat(req: any, lop: string, phien: string) {
 
 async function judge(req: any, lop: string, phien: string) {
   if (!(await allow("tham_tu", phien))) return { ok: false, error: "Em làm hơi nhanh rồi, nghỉ một chút nhé!" };
-  const nhanDinh = clean(req.nhan_dinh, 300), dapAn = req.dap_an === true, chon = req.chon === true;
+  const claim = CLAIMS.find(c => c.ma === req.ma);
+  if (!claim || typeof req.chon !== "boolean") return {ok:false,error:"Nhận định không hợp lệ."};
+  const nhanDinh = claim.text, dapAn = claim.dung, chon = req.chon;
   const bangChung = clean(req.bang_chung, 500);
   let out: any = { diem: 0, nhan_xet: "Em chưa viết bằng chứng. Hãy ghi rõ em dựa vào đâu (tư liệu nào, quan sát gì trên mô hình).", goi_y: 'Mở "Lịch sử tháp" hoặc click vào bộ phận trên mô hình để tìm bằng chứng.' };
   if (bangChung.length >= 3) {
-    const prompt = `NHẬN ĐỊNH: ${nhanDinh}\nĐÁP ÁN CHUẨN: ${dapAn ? "Đúng" : "Sai"}\nGIẢI THÍCH CHUẨN: ${clean(req.giai_thich, 600)}\nHỌC SINH CHỌN: ${chon ? "Đúng" : "Sai"}\nBẰNG CHỨNG HỌC SINH VIẾT: ${bangChung}`;
+    const prompt = `NHẬN ĐỊNH: ${nhanDinh}\nĐÁP ÁN CHUẨN: ${dapAn ? "Đúng" : "Sai"}\nGIẢI THÍCH CHUẨN: ${claim.giai}\nHỌC SINH CHỌN: ${chon ? "Đúng" : "Sai"}\nBẰNG CHỨNG HỌC SINH VIẾT: ${bangChung}`;
     out = await gemini(SYSTEM_JUDGE + "\n\nBỘ TƯ LIỆU THAM KHẢO:\n" + tuLieuText, [{ role: "user", parts: [{ text: prompt }] }], 0.2);
   }
   const diem = Math.max(0, Math.min(2, Math.round(Number(out.diem) || 0)));
@@ -130,7 +134,7 @@ async function judge(req: any, lop: string, phien: string) {
 
 async function stats(req: any) {
   const [{ gia_tri }] = await sql`select gia_tri from thapcham.cau_hinh where khoa='ma_giao_vien'`;
-  if (clean(req.ma_gv, 20).toUpperCase() !== gia_tri) { await new Promise((ok) => setTimeout(ok, 800)); return { ok: false, error: "Sai mã giáo viên." }; }
+  if (!(await teacher(sql, req)) && clean(req.ma_gv, 20).toUpperCase() !== gia_tri) { await new Promise((ok) => setTimeout(ok, 800)); return { ok: false, error: "Sai mã giáo viên." }; }
   const lop = clean(req.loc_lop, 12);
   const f = lop ? sql`where lop = ${lop}` : sql``;
   const [tong] = await sql`select
@@ -155,7 +159,15 @@ Deno.serve(async (r) => {
   if (r.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (r.method !== "POST") return json({ ok: true, app: "Thap Cham AI" });
   try {
-    const req = await r.json().catch(() => ({}));
+    if (Number(r.headers.get("content-length") || 0) > 20000) return json({ok:false,error:"Nội dung quá dài."},413);
+    const raw = await r.text();
+    if (raw.length > 20000) return json({ok:false,error:"Nội dung quá dài."},413);
+    const req = JSON.parse(raw || "{}");
+    const ip = await hash(r.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown");
+    if (["catalog","teacher_login","teacher_logout","learning_dashboard","teacher_review","enroll","progress","assessment","solution","hint","submit_attempt"].includes(req.action)) return json(await cycle(req,sql,gemini,ip));
+    if (req.action === "resources") return json({ok:true,sources:TU_LIEU});
+    if (["chat","judge"].includes(req.action)) {await limit(sql,"legacy-ai:"+ip,40);await limit(sql,"global-ai",400,86400);}
+    if(req.action === "stats" && !(await teacher(sql,req))) await limit(sql,"teacher:"+ip,8);
     const lop = clean(req.lop, 12).toUpperCase() || "KHÁCH", phien = clean(req.phien, 40) || "na";
     switch (req.action) {
       case "chat": return json(await chat(req, lop, phien));
@@ -171,6 +183,8 @@ Deno.serve(async (r) => {
     }
   } catch (e) {
     console.error(e);
-    return json({ ok: false, error: "Lỗi máy chủ: " + (e as Error).message });
+    const code=(e as Error).message;
+    const messages:Record<string,string>={AUTH:"Phiên giáo viên hết hạn hoặc mã chưa đúng.",SESSION:"Phiên học chưa hợp lệ. Hãy vào lại phòng học.",CONSENT:"Cần xác nhận thông tin dữ liệu trước khi bắt đầu.",INPUT:"Kiểm tra lại các trường thông tin.",RATE_LIMIT:"Đã đạt giới hạn lượt sử dụng. Vui lòng thử lại sau.",FINISH_TASKS:"Hãy hoàn thành hai lượt của sáu nhiệm vụ trước.",PRE_FIRST:"Hãy làm phiếu đầu vào trước.",REVISE_FIRST:"Hãy nộp bài và chờ xử lí trước khi tiếp tục."};
+    return json({ok:false,error:messages[code]||"Máy chủ chưa xử lí được. Bản nháp trên thiết bị vẫn được giữ.",code:messages[code]?code:"SERVER"},code==="AUTH"?401:400);
   }
 });
