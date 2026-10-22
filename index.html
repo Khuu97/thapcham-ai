@@ -62,6 +62,8 @@ input[type=range]{width:100%;accent-color:#69eff8}.rangeHead{display:flex;justif
 
 </style>
 <link rel="stylesheet" href="chat.css" />
+<script>if(/[?&]embed=1/.test(location.search))document.documentElement.classList.add("embed")</script>
+<style>.embed .roomLink,.embed .leftPanel,.embed #aiFab,.embed #aiPanel,.embed .hint,.embed .brand,.embed #btnFull,.embed #btnReset,.embed #btnGridMode{display:none!important}.embed .topbar{top:8px;left:8px;right:8px;justify-content:flex-end}.embed .info{top:56px;max-height:calc(100% - 64px)}</style>
 <script src="lib/three.min.js"></script>
 <script>window.THREE||document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>')</script>
 <script src="lib/OrbitControls.js"></script>
@@ -2034,5 +2036,5 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 </script>
 <script src="config.js"></script>
 <script src="chat.js?v=learning1"></script>
-<a href="hoc-tap.html" style="position:fixed;bottom:82px;right:18px;z-index:80;background:#ffd86b;color:#143b42;padding:12px 18px;border-radius:20px;font:bold 14px system-ui;text-decoration:none">Thám tử sử liệu · Vào phòng học →</a>
+<a href="hoc-tap.html" class="roomLink" style="position:fixed;bottom:82px;right:18px;z-index:80;background:#ffd86b;color:#143b42;padding:12px 18px;border-radius:20px;font:bold 14px system-ui;text-decoration:none">Thám tử sử liệu · Vào phòng học →</a>
 </body></html>

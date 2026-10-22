@@ -55,8 +55,9 @@ export async function cycle(req:any,sql:any,gemini:any,ip:string){
   const qs=(QUIZ as any)[req.phase],ans=req.answers;
   if(!Array.isArray(ans)||ans.length!==qs.length||ans.some((x:any)=>!Number.isInteger(x)||x<0||x>2))throw Error('INPUT');
   if(req.phase==='sau'){
-   const [{n}]=await sql`select count(distinct task)::int n from thapcham.attempts where token_hash=${th} and version=2 and status<>'pending'`;
-   if(n<6)throw Error('FINISH_TASKS');
+   const ids=TASKS.map(t=>t.id);
+   const [{n}]=await sql`select count(distinct task)::int n from thapcham.attempts where token_hash=${th} and task=any(${ids}) and status<>'pending'`;
+   if(n<ids.length)throw Error('FINISH_TASKS');
   }
   const score=ans.reduce((s:number,v:number,i:number)=>s+(v===qs[i].answer?1:0),0);
   await sql`insert into thapcham.assessments(token_hash,phase,answers,score) values(${th},${req.phase},${sql.json(ans)},${score}) on conflict do nothing`;
@@ -103,6 +104,6 @@ export async function cycle(req:any,sql:any,gemini:any,ip:string){
  }catch(e){
   console.warn('learning feedback failed',e instanceof Error?e.message:'unknown');
   await sql`update thapcham.attempts set status='error',updated_at=now() where id=${id}`;
-  return {ok:true,id,saved:true,ai_unavailable:true,message:'Bài đã được lưu. AI chưa phản hồi được; em có thể thử lại hoặc tự sửa theo rubric, giáo viên sẽ xem bài.'};
+  return {ok:true,id,saved:true,ai_unavailable:true,ai_error:e instanceof Error?e.message.slice(0,40):'unknown',message:'Bài đã được lưu. AI chưa phản hồi được; em có thể thử lại hoặc tự sửa theo rubric, giáo viên sẽ xem bài.'};
  }
 }

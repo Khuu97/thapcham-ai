@@ -5,7 +5,7 @@ export const SOURCES = [
  {id:'S4',title:'Quy ước quan sát và lập luận',author:'Hướng dẫn học tập của ứng dụng',url:'',section:'Học liệu hướng dẫn – cần giáo viên rà soát trước tiết dạy',text:'Trong hoạt động này, đế chỉ phần nền đỡ phía dưới; thân là khối đứng chính; mái là phần phía trên thân; chóp là phần cao nhất. Đây là quy ước nhận diện. Khi lập luận cần tách điều quan sát trên mô hình khỏi kết luận về di tích thật. Một nguồn đáng tin vẫn phải có nội dung liên quan trực tiếp tới nhận định.'},
  {id:'S5',title:'Bảo tồn di tích',author:'UNESCO World Heritage Centre',url:'https://whc.unesco.org/en/list/949/',section:'Integrity; Authenticity',text:'Mỹ Sơn từng chịu tổn hại trong chiến tranh; độ ẩm và lũ lụt cũng là các nguy cơ đối với di tích. Nghiên cứu và bảo tồn quan tâm đến vật liệu, thiết kế, kĩ thuật và bối cảnh của công trình.'}
 ];
-export const TASKS = [
+const ALL_TASKS = [
  {id:'Q1',kind:'Quan sát',title:'Đọc cấu trúc tháp',prompt:'Quan sát mô hình: mô tả vị trí của đế, thân, mái và chóp. Chọn một dấu hiệu giúp em phân biệt mái với chóp; nêu giới hạn của quan sát này.',sources:['S3','S4'],answer:'Nhận diện theo vị trí tương đối: đế ở dưới, thân là khối chính, mái trên thân, chóp cao nhất. Mô tả điều nhìn thấy và không khẳng định mô hình đại diện chính xác mọi di tích.',hint:'So sánh vị trí và phạm vi của mái với phần cao nhất.',choice:null},
  {id:'Q2',kind:'Quan sát',title:'Màu sắc có đủ không?',prompt:'Nhận định: “Chỉ từ màu đỏ trên mô hình AI, ta đã chứng minh được vật liệu thật của một di tích cụ thể.” Chọn Đúng, Sai hoặc Chưa đủ căn cứ, rồi giải thích bằng chứng cần bổ sung.',sources:['S1','S3'],answer:'Sai: màu mô hình không chứng minh vật liệu di tích. S1 cung cấp thông tin gạch nung của Mỹ Sơn, S3 giới hạn mô hình. Chấp nhận diễn đạt chưa đủ căn cứ nếu giải thích đúng giới hạn bằng chứng.',hint:'Tách màu hiển thị khỏi thông tin vật liệu được tài liệu xác nhận.',choice:'Sai'},
  {id:'Q3',kind:'Kiểm chứng',title:'Có phải Po Klong Garai?',prompt:'Nhận định: “Mô hình này là bản sao chính xác của Po Klong Garai.” Đánh giá mức độ có căn cứ của nhận định bằng hồ sơ mô hình.',sources:['S3'],answer:'Không đủ căn cứ xác nhận sự trùng khớp chính xác. Hồ sơ nói rõ đây là mô hình tổng hợp, không phải hồ sơ phục dựng di tích. Chấp nhận Sai hoặc Chưa đủ căn cứ nếu lí giải đúng.',hint:'Tìm thông tin về cách tạo và hồ sơ đo đạc của mô hình.',choice:'Chưa đủ căn cứ'},
@@ -13,6 +13,9 @@ export const TASKS = [
  {id:'Q5',kind:'Lập luận',title:'Phản biện một câu do AI tạo',prompt:'Tình huống giả lập để học: AI nói “Kiến trúc Mỹ Sơn chịu ảnh hưởng Ấn Độ nên chỉ là sự sao chép, không có sự sáng tạo của cư dân bản địa.” Hãy sửa nhận định bằng lập luận có nguồn.',sources:['S1','S2'],answer:'Bác bỏ suy luận ảnh hưởng đồng nghĩa sao chép. S2 nói sự tiếp nhận và thích ứng của cư dân bản địa. Cần phân biệt nguồn ảnh hưởng với cách chủ thể bản địa tiếp nhận.',hint:'Hai từ “ảnh hưởng” và “thích ứng” có cùng nghĩa với sao chép không?',choice:null},
  {id:'Q6',kind:'Lập luận',title:'Viết nhãn giới thiệu có trách nhiệm',prompt:'Viết nhãn giới thiệu 60–100 từ cho mô hình: nói rõ mô hình thể hiện điều gì, một kiến thức có nguồn về Mỹ Sơn, một giới hạn của mô hình và cách kiểm chứng trước khi dùng thông tin.',sources:['S1','S2','S3','S5'],answer:'Nhãn phải phân biệt mô hình tổng hợp và di tích thật, có kiến thức được nguồn hỗ trợ, không bịa độ chính xác hay kích thước; chỉ ra cách kiểm tra nguồn. Độ dài là hướng dẫn, không phải căn cứ duy nhất để chấm.',hint:'Người xem cần biết điều nào là mô phỏng và điều nào được tài liệu xác nhận.',choice:null}
 ];
+// Một tiết học: 3 nhiệm vụ (Quan sát – Kiểm chứng – Lập luận). Các nhiệm vụ khác giữ lại để dùng sau.
+export const ACTIVE_TASKS = ['Q1','Q3','Q5'];
+export const TASKS = ALL_TASKS.filter(t=>ACTIVE_TASKS.includes(t.id));
 export const RUBRIC = [
  {key:'ket_luan',label:'Kết luận',levels:['Chưa có hoặc không phù hợp','Có nhưng chưa rõ hoặc thiếu điều kiện','Rõ và phù hợp phạm vi tư liệu']},
  {key:'bang_chung',label:'Bằng chứng',levels:['Không có hoặc không liên quan','Có nhưng chung chung hoặc nguồn chưa rõ','Cụ thể, liên quan và chỉ rõ nguồn']},
@@ -39,5 +42,5 @@ export function validateFeedback(out:any, task:any, body:any){
 export function recommend(feedback:any){
  if(!feedback)return {task:'Q1',reason:'Bắt đầu với quan sát có hướng dẫn.'};
  const weak=feedback.tieu_chi.reduce((a:any,b:any)=>a.diem<=b.diem?a:b);
- return {task:feedback.tong===6?'Q6':({ket_luan:'Q3',bang_chung:'Q4',giai_thich:'Q5'} as any)[weak.key],reason:feedback.tong===6?'Thử tổng hợp thành nhãn giới thiệu di sản.':'Luyện thêm tiêu chí '+RUBRIC.find(r=>r.key===weak.key)!.label.toLowerCase()+'.'};
+ return {task:feedback.tong===6?'Q5':({ket_luan:'Q3',bang_chung:'Q3',giai_thich:'Q5'} as any)[weak.key],reason:feedback.tong===6?'Thử phản biện một câu do AI tạo.':'Luyện thêm tiêu chí '+RUBRIC.find(r=>r.key===weak.key)!.label.toLowerCase()+'.'};
 }

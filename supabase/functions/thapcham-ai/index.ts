@@ -214,7 +214,7 @@ Deno.serve(async (r) => {
   } catch (e) {
     console.error(e);
     const code=(e as Error).message;
-    const messages:Record<string,string>={AUTH:"Phiên giáo viên hết hạn hoặc mã chưa đúng.",SESSION:"Phiên học chưa hợp lệ. Hãy vào lại phòng học.",CONSENT:"Cần xác nhận thông tin dữ liệu trước khi bắt đầu.",INPUT:"Kiểm tra lại các trường thông tin.",RATE_LIMIT:"Đã đạt giới hạn lượt sử dụng. Vui lòng thử lại sau.",FINISH_TASKS:"Hãy hoàn thành hai lượt của sáu nhiệm vụ trước.",PRE_FIRST:"Hãy làm phiếu đầu vào trước.",REVISE_FIRST:"Hãy nộp bài và chờ xử lí trước khi tiếp tục."};
+    const messages:Record<string,string>={AUTH:"Phiên giáo viên hết hạn hoặc mã chưa đúng.",SESSION:"Phiên học chưa hợp lệ. Hãy vào lại phòng học.",CONSENT:"Cần xác nhận thông tin dữ liệu trước khi bắt đầu.",INPUT:"Kiểm tra lại các trường thông tin.",RATE_LIMIT:"Đã đạt giới hạn lượt sử dụng. Vui lòng thử lại sau.",FINISH_TASKS:"Hãy nộp đủ ba nhiệm vụ trước khi làm phiếu cuối.",PRE_FIRST:"Hãy làm phiếu đầu vào trước.",GEMINI_KEY_MISSING:"Trợ lý AI chưa được cấu hình (thiếu GEMINI_API_KEY).",GEMINI_AUTH:"Trợ lý AI bị Google từ chối (key sai hoặc bị chặn).",GEMINI_BUSY:"Trợ lý AI đang quá tải, em thử lại sau ít phút.",REVISE_FIRST:"Hãy nộp bài và chờ xử lí trước khi tiếp tục."};
     return json({ok:false,error:messages[code]||"Máy chủ chưa xử lí được. Bản nháp trên thiết bị vẫn được giữ.",code:messages[code]?code:"SERVER"},code==="AUTH"?401:400);
   }
 });

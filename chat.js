@@ -187,7 +187,7 @@
   });
   // ---------- Thám tử sử liệu ----------
   const det = {started:false, render(){
-    $('#detPane').innerHTML='<div class="detIntro"><b>Thám tử sử liệu • Phòng học mới</b><p>Sáu nhiệm vụ khám phá, kiểm chứng và lập luận. Nhận phản hồi AI theo ba tiêu chí, sửa bài và theo dõi tiến bộ.</p><p>Mô hình là học liệu tổng hợp do AI tạo, không phải bản sao chính xác của một di tích.</p><a href="hoc-tap.html" style="display:block;padding:14px;background:#ffd86b;color:#143b42;border-radius:12px;text-align:center;font-weight:bold">Vào phòng học →</a></div>';
+    $('#detPane').innerHTML='<div class="detIntro"><b>Thám tử sử liệu • Phòng học mới</b><p>Ba nhiệm vụ: quan sát, kiểm chứng và lập luận. Nhận phản hồi AI theo ba tiêu chí, sửa bài và theo dõi tiến bộ.</p><p>Mô hình là học liệu tổng hợp do AI tạo, không phải bản sao chính xác của một di tích.</p><a href="hoc-tap.html" style="display:block;padding:14px;background:#ffd86b;color:#143b42;border-radius:12px;text-align:center;font-weight:bold">Vào phòng học →</a></div>';
   },start(){location.href='hoc-tap.html';}};
   window.__thamTu = det;
 })();
