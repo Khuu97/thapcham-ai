@@ -79,27 +79,57 @@ async function allow(table: "hoi_dap" | "tham_tu", phien: string) {
   return n < LIMIT_PER_10MIN;
 }
 
+// Bounded retry for transient Gemini failures. Keep requests below the client 55s timeout.
 async function gemini(systemText: string, contents: unknown[], temperature: number): Promise<any> {
   const key = Deno.env.get("GEMINI_API_KEY");
-  if (!key) throw new Error("Giáo viên chưa cài GEMINI_API_KEY cho máy chủ.");
+  if (!key) throw new Error("GEMINI_KEY_MISSING");
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: systemText }] }, contents,
     generationConfig: { temperature, maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 0 }, responseMimeType: "application/json" },
     safetySettings: ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map((category) => ({ category, threshold: "BLOCK_LOW_AND_ABOVE" })),
   });
-  let last = "";
-  for (const m of MODELS) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body, signal: AbortSignal.timeout(20000) });
-    if (r.ok) {
-      const d = await r.json();
-      const text = (d.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
-      if (!text) return { tra_loi: "Trợ lý không trả lời được câu này. Em thử hỏi cách khác về tháp Chăm nhé.", nguon: [], trong_tu_lieu: false, diem: 0, nhan_xet: "Chưa chấm được, em thử lại nhé." };
-      try { return JSON.parse(text); } catch { const mm = text.match(/\{[\s\S]*\}/); try { return mm ? JSON.parse(mm[0]) : { tra_loi: text, nhan_xet: text }; } catch { return { tra_loi: text, nhan_xet: text }; } }
+  const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+  const deadline = Date.now() + 44000;
+  let last = "UNKNOWN";
+  for (const model of MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const remaining = deadline - Date.now();
+      if (remaining < 2500) throw new Error("GEMINI_BUSY");
+      let status = 0;
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body, signal: AbortSignal.timeout(Math.min(16000, remaining - 1000))
+        });
+        status = response.status;
+        if (response.ok) {
+          const data = await response.json();
+          const answer = (data.candidates?.[0]?.content?.parts ?? []).map((part: any) => part.text ?? "").join("");
+          if (!answer) throw new Error("GEMINI_EMPTY");
+          let parsed: any;
+          try { parsed = JSON.parse(answer); }
+          catch { throw new Error("GEMINI_INVALID_JSON"); }
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("GEMINI_INVALID_JSON");
+          return parsed;
+        }
+        const errorText = (await response.text()).slice(0, 250);
+        last = `${status}: ${errorText}`;
+        if (status === 401 || status === 403) throw new Error("GEMINI_AUTH");
+        if (![404, 429, 500, 502, 503, 504].includes(status)) throw new Error("GEMINI_REQUEST_FAILED");
+        if (status === 404) break; // unavailable model: switch model immediately
+      } catch (error) {
+        const code = (error as Error).message || "";
+        if (["GEMINI_AUTH", "GEMINI_REQUEST_FAILED", "GEMINI_EMPTY", "GEMINI_INVALID_JSON"].includes(code)) throw error;
+        last = code || last;
+      }
+      if (attempt === 0 && status !== 404) {
+        const pause = 650 + Math.floor(Math.random() * 300);
+        if (Date.now() + pause + 2500 < deadline) await sleep(pause);
+      }
     }
-    last = `${r.status} ${(await r.text()).slice(0, 200)}`;
-    if (![404,400,429,500,502,503,504].includes(r.status)) break;
   }
-  throw new Error("Gemini: " + last);
+  console.error("Gemini exhausted models and retries:", last);
+  throw new Error("GEMINI_BUSY");
 }
 
 async function chat(req: any, lop: string, phien: string) {
