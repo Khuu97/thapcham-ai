@@ -6,3 +6,23 @@
 #viewer iframe{display:block;width:100%;height:min(58vh,520px);border:0}
 #viewer.mini iframe{display:none}
 @media(max-width:700px){#viewer iframe{height:46vh}}
+
+/* Phòng học chạm nhanh: kết luận – một câu tư liệu – một câu giải thích */
+.tapOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 22px}
+.tapOption,.evidenceCard{width:100%;min-height:70px;text-align:left;background:#f9fbf9;color:var(--ink);border:2px solid #d0dfd9;border-radius:14px;white-space:normal;line-height:1.4;overflow-wrap:anywhere;transition:background .15s,border-color .15s}
+.tapOption{font-size:15px;padding:16px;display:flex;align-items:center;justify-content:center;text-align:center}
+.tapOption.pick,.evidenceCard.pick{background:#e3f4eb;border-color:var(--teal);box-shadow:0 0 0 2px rgba(23,109,112,.12)}
+.tapOption.pick::before,.evidenceCard.pick::before{content:"✓ ";color:#13775f;font-weight:900}
+.evidenceCards{display:grid;gap:9px;margin:12px 0 22px}
+.evidenceCard{display:block;padding:14px 16px;min-height:60px}
+.evidenceCard small{display:block;color:#42686a;font-size:12px;margin-bottom:5px}
+.evidenceCard span{display:block;font-size:14px}
+.reasonMeta{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted);margin:3px 0 16px}
+#reason{min-height:62px;max-height:120px}
+.feedbackBrief{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.feedbackBrief .stars{font-size:27px;color:#b78525;letter-spacing:1px;line-height:1.2}
+.detectiveBadge{display:flex;align-items:center;gap:14px;padding:16px;margin-bottom:16px;border:2px solid #d8b05e;border-radius:15px;background:#fff8e7}
+.detectiveBadge .medal{font-size:36px}
+.detectiveBadge strong{letter-spacing:.05em}
+.detectiveBadge p{font-size:13px;margin:4px 0 0}
+@media(max-width:760px){.tapOptions{grid-template-columns:1fr}.tapOption{min-height:60px;text-align:left;justify-content:flex-start}.evidenceCard{min-height:56px}}
