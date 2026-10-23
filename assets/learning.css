@@ -92,3 +92,14 @@ table td,table th{border-color:var(--line);color:#e6f6f8;font-size:16px}
 .sessionLabel{font-size:16px;overflow-wrap:anywhere;margin:2px 0 8px;color:#b4d0d5}
 .feedbackBrief small,.feedback small{font-size:16px;color:#b4d0d5}
 @media(max-width:760px){.progressDot{min-width:56px;padding:12px}.card{padding:16px}.tapOptions{grid-template-columns:1fr}.lessonContent{width:100%}}
+
+
+/* Kích thước chữ tối thiểu cho nội dung học sinh và bảng giáo viên */
+body,header,main,footer,.card p,.card li,.card label,.card small,.card button,
+.card a,.card summary,.source small,.feedback p,.feedback small,.readonly,
+.subtle,.muted,.reasonMeta,.taskProgress,.moreMenu,.sessionLabel,
+input,textarea,select,table,th,td,fieldset,legend,.eyebrow,
+.hero p,.steps span,.tag,#notice{font-size:16px}
+footer{color:var(--muted)}
+.tapOption,.evidenceCard,.moreMenu summary,.progressDot{min-height:48px}
+@media(max-width:760px){.taskProgress{gap:8px}.progressDot{min-width:50px}}
