@@ -81,13 +81,40 @@ function viewer(on){const v=$('#viewer');if(!v)return;v.hidden=!on;if(on&&!v.que
 function hero(on){const h=document.querySelector('.hero');if(h)h.hidden=!on;}
 function intro(){
  viewer(false);hero(true);
- $('#app').innerHTML=`<section class="card narrow"><h2>Vào phòng học</h2><p>3 nhiệm vụ ngắn • khoảng 15 phút</p><label for="class">Lớp của em</label><input id="class" maxlength="12" placeholder="Ví dụ: 10A1" autocomplete="off"><p class="muted">Không cần họ tên. Bài làm được lưu để thầy cô xem và được AI nhận xét.</p><label class="consent"><input id="consent" type="checkbox">Em đồng ý và làm theo hướng dẫn của thầy cô.</label><button id="start" class="wide">Vào học →</button></section>`;
+ $('#app').innerHTML=`<section class="card narrow"><h2>Vào phòng học</h2><p>3 nhiệm vụ ngắn • khoảng 15 phút</p><label for="class">Lớp của em</label><input id="class" maxlength="12" placeholder="Ví dụ: 10A1" autocomplete="off"><p class="muted">Không cần họ tên. Bài làm được lưu để giáo viên xem; nội dung bài làm được gửi đến Gemini để tạo nhận xét. Phiếu góp ý cuối buổi chỉ giáo viên xem, không gửi cho AI.</p><label class="consent"><input id="consent" type="checkbox">Em đồng ý và làm theo hướng dẫn của thầy cô.</label><button id="start" class="wide">Vào học →</button></section>`;
  $('#start').onclick=e=>guarded(e.target,async()=>{const classCode=$('#class').value.replace(/\s+/g,'').toLocaleUpperCase('vi');$('#class').value=classCode;if(!$('#consent').checked||!classCode)throw Error('Em nhập lớp và đánh dấu ô đồng ý nhé.');if(!token)token=crypto.randomUUID();storage.set('tc_learning_token',token);progress=await api({action:'enroll',lop:classCode,consent:true});render();});
 }
 async function refresh(){progress=await api({action:'progress'});render();}
 function quiz(phase){viewer(false);hero(false);const questions=cat.quiz[phase];$('#app').innerHTML=`<section class="card narrow"><p class="eyebrow">${phase==='truoc'?'TRƯỚC KHI KHÁM PHÁ':'SAU KHI HOÀN THÀNH'}</p><h2>Phiếu ${phase==='truoc'?'đầu vào':'cuối hoạt động'}</h2><p>Tự trả lời, chưa dùng trợ lý AI. Mỗi phiếu chỉ nộp một lần.</p>${questions.map((q,i)=>`<fieldset><legend>${i+1}. ${E(q.q)}</legend>${q.options.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}">${E(o)}</label>`).join('')}</fieldset>`).join('')}<button id="quizSubmit">Nộp phiếu</button></section>`;$('#quizSubmit').onclick=e=>guarded(e.target,async()=>{const answers=questions.map((_,i)=>document.querySelector(`input[name=q${i}]:checked`)?.value);if(answers.some(x=>x===undefined))throw Error('Hãy trả lời đủ các câu.');await api({action:'assessment',phase,answers:answers.map(Number)});await refresh();});}
+
+function experience(){
+ viewer(false);hero(false);
+ const choices=[
+  {key:'ease',title:'1. Em thao tác với ứng dụng có dễ không?',options:['Dễ sử dụng','Tương đối dễ, có vài khó khăn','Khó sử dụng']},
+  {key:'helpful',title:'2. Hoạt động nào giúp em học tập nhiều nhất?',options:['Khám phá mô hình 3D','Hỏi Trợ lý AI','Thám tử sử liệu và nhận phản hồi AI','Chưa có hoạt động nào hữu ích rõ rệt']},
+  {key:'ai_awareness',title:'3. Theo em, thông tin do AI tạo ra cần được sử dụng thế nào?',options:['Cần kiểm chứng bằng tư liệu','Chỉ kiểm chứng khi AI trả lời không rõ','Có thể tin mọi thông tin AI cung cấp']}
+ ];
+ $('#app').innerHTML=`<section class="card narrow experienceForm"><p class="eyebrow">PHẢN HỒI TRẢI NGHIỆM · KHÔNG TÍNH ĐIỂM</p><h2>Em thấy Tháp Chăm AI thế nào?</h2><p>Ba câu chọn nhanh và một ý kiến tùy chọn. Em có thể bỏ qua. Phản hồi được lưu theo mã phiên để giáo viên cải thiện ứng dụng, <b>không gửi nội dung này đến AI</b>.</p>
+ ${choices.map(c=>`<fieldset class="experienceField"><legend>${E(c.title)}</legend><div class="experienceOptions">${c.options.map((label,i)=>`<label class="experienceChoice"><input type="radio" name="${E(c.key)}" value="${i+1}"><span>${E(label)}</span></label>`).join('')}</div></fieldset>`).join('')}
+ <label for="experienceNote"><b>4. Em muốn ứng dụng cải thiện điều gì? (không bắt buộc)</b></label>
+ <textarea id="experienceNote" maxlength="500" rows="3" placeholder="Ví dụ: câu hỏi chưa rõ, thao tác khó, AI trả lời chậm…"></textarea>
+ <p class="muted">Không ghi tên, số điện thoại hoặc thông tin cá nhân.</p>
+ <div class="experienceActions"><button type="button" id="experienceSubmit" class="wide">Gửi phản hồi</button><button type="button" id="experienceSkip" class="ghost">Bỏ qua</button></div>
+ </section>`;
+ $('#experienceSubmit').onclick=e=>guarded(e.target,async()=>{
+  const get=name=>Number(document.querySelector('input[name="'+name+'"]:checked')?.value||0);
+  const ease=get('ease'),helpful=get('helpful'),ai_awareness=get('ai_awareness');
+  if(!ease||!helpful||!ai_awareness){notice('Em chọn một phương án ở mỗi câu nhé.');return;}
+  const r=await api({action:'experience_submit',ease,helpful,ai_awareness,comment:$('#experienceNote').value.trim().slice(0,500)});
+  progress.experience=r.experience;storage.remove('tc_skip_experience_'+token);render();
+  notice('Đã ghi nhận góp ý của em. Cảm ơn em!');
+ });
+ $('#experienceSkip').onclick=()=>{storage.set('tc_skip_experience_'+token,'1');render();notice('Em đã hoàn thành hoạt động.');};
+}
+
 function render(){
  if(!progress.assessments.some(a=>a.phase==='truoc'))return quiz('truoc');
+ if(progress.assessments.some(a=>a.phase==='sau')&&!progress.experience&&storage.get('tc_skip_experience_'+token)!=='1')return experience();
  viewer(true);hero(false);
  const t=cat.tasks.find(x=>x.id===taskId),rows=progress.attempts.filter(a=>a.task===t.id),first=rows.find(a=>a.version===1),second=rows.find(a=>a.version===2);
  const completed=cat.tasks.filter(t=>progress.attempts.some(a=>a.task===t.id&&a.status==='done')).length,total=cat.tasks.length,next=cat.tasks[cat.tasks.indexOf(t)+1];
@@ -119,7 +146,7 @@ function render(){
  <button id="submit" class="wide" ${first?.status==='pending'?'disabled':''}>${version===1?'Nộp bài':'Nộp bản sửa'}</button><p id="saveStatus" class="muted" aria-live="polite"></p></article>`}
  ${completed<total&&!progress.assessments.some(a=>a.phase==='sau')?'':`<article class="card completionCard">${completed===total?`<div class="detectiveBadge" role="status"><span class="medal">🏅</span><div><strong>THÁM TỬ SỬ LIỆU</strong><p>Em đã nộp đủ ba nhiệm vụ. Xem lại phản hồi rồi làm phiếu cuối.</p></div></div>`:''}<h3>Hoàn thành hoạt động</h3>${progress.assessments.some(a=>a.phase==='sau')?`<p>Phiếu đầu vào: <b>${progress.assessments.find(a=>a.phase==='truoc').score}/3</b> · Phiếu cuối: <b>${progress.assessments.find(a=>a.phase==='sau').score}/3</b></p><p class="muted">Hai phiếu ngắn chỉ phản ánh một phần kết quả; cần giáo viên đối chiếu bài làm.</p>`:`<button id="post" class="wide" ${completed<total?'disabled':''}>Làm phiếu cuối hoạt động</button><p class="muted">${completed<total?`Mở sau khi nộp đủ ${total} nhiệm vụ (còn ${total-completed}). Bản sửa là không bắt buộc.`:'Em đã nộp đủ nhiệm vụ – hãy làm phiếu cuối nhé!'}</p>`}</article>`}</section></div>`;
  document.querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.task;render();});document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.next;render();scrollTo({top:0,behavior:'smooth'});});
- $('#reload').onclick=e=>guarded(e.target,refresh);$('#end').onclick=()=>{if(busy)return;for(const t of cat.tasks)for(const v of [1,2])storage.remove('tc_draft_'+token+'_'+t.id+'_'+v);storage.remove('tc_learning_token');token=null;progress=null;taskId='Q1';intro();notice('Đã kết thúc phiên trên thiết bị. Bài đã nộp vẫn được lưu cho giáo viên.');};
+ $('#reload').onclick=e=>guarded(e.target,refresh);$('#end').onclick=()=>{if(busy)return;for(const t of cat.tasks)for(const v of [1,2])storage.remove('tc_draft_'+token+'_'+t.id+'_'+v);storage.remove('tc_learning_token');storage.remove('tc_skip_experience_'+token);token=null;progress=null;taskId='Q1';intro();notice('Đã kết thúc phiên trên thiết bị. Bài đã nộp vẫn được lưu cho giáo viên.');};
  const read=()=>{
   const chosen=document.querySelector('#answerOptions .tapOption.pick')?.dataset.answer||'';
   const selected=document.querySelector('#evidenceCards .evidenceCard.pick');
@@ -185,12 +212,37 @@ function summary(){
   return `<tr><td><b>${E(lop)}</b></td><td>${new Set([...A.map(a=>a.code),...asm.filter(a=>a.lop===lop).map(a=>a.code)]).size}</td><td>${first.length}</td><td>${per}</td><td>${avg(pre)} (${pre.length}) → ${avg(post)} (${post.length})</td></tr>`;}).join('');
  return `<section class="card"><h3>Tổng hợp theo lớp</h3><p class="muted">Đã bỏ các lớp thử nghiệm có tên bắt đầu bằng TEST. “Đúng” = tỉ lệ chọn đúng kết luận ở bài nộp lần đầu.</p><div class="scroll"><table><thead><tr><th>Lớp</th><th>Số học sinh</th><th>Bài nộp</th><th>Điểm AI TB · chọn đúng</th><th>Phiếu đầu → cuối (/3)</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Chưa có dữ liệu.</td></tr>'}</tbody></table></div></section>`;
 }
+
+const EXPERIENCE_LABELS={
+ ease:['Dễ sử dụng','Tương đối dễ','Khó sử dụng'],
+ helpful:['Khám phá 3D','Trợ lý AI','Thám tử sử liệu','Chưa thấy hữu ích'],
+ ai_awareness:['Cần kiểm chứng bằng tư liệu','Chỉ kiểm chứng khi AI chưa rõ','Có thể tin mọi thông tin AI']
+};
+function experienceTeacherBlock(){
+ const list=dashboard.experiences||[];
+ const classes=[...new Set(list.map(x=>x.lop))].sort();
+ const counts=(list,key)=>EXPERIENCE_LABELS[key].map((label,i)=>label+': <b>'+list.filter(x=>Number(x[key])===i+1).length+'</b>').join(' · ');
+ return `<section class="card"><div class="row"><h3>Phản hồi trải nghiệm · không tính điểm</h3><button type="button" class="ghost" id="exportExperiences">Xuất CSV phản hồi</button></div>
+ <p class="muted">${list.length} phiếu phản hồi từ ${new Set(list.map(x=>x.code)).size} mã phiên, không đồng nghĩa với số học sinh duy nhất. Đây là nhận xét của người học, không phải điểm kiểm tra năng lực.</p>
+ ${classes.map(lop=>{const a=list.filter(x=>x.lop===lop);return `<div class="experienceSummary"><h4>Lớp ${E(lop)} · ${a.length} phiếu</h4><p><b>Dễ sử dụng:</b> ${counts(a,'ease')}</p><p><b>Hoạt động hữu ích:</b> ${counts(a,'helpful')}</p><p><b>Nhận thức về AI:</b> ${counts(a,'ai_awareness')}</p></div>`;}).join('')||'<p>Chưa có phiếu phản hồi trải nghiệm.</p>'}
+ <details><summary>Xem từng phản hồi và góp ý</summary><div class="scroll"><table><thead><tr><th>Ngày</th><th>Lớp</th><th>Mã phiên</th><th>Dễ sử dụng</th><th>Hữu ích nhất</th><th>Nhận thức về AI</th><th>Góp ý</th></tr></thead>
+ <tbody>${list.map(a=>`<tr><td>${E(new Date(a.created_at).toLocaleString('vi-VN'))}</td><td>${E(a.lop)}</td><td>${E(a.code)}</td><td>${E(EXPERIENCE_LABELS.ease[Number(a.ease)-1]||'–')}</td><td>${E(EXPERIENCE_LABELS.helpful[Number(a.helpful)-1]||'–')}</td><td>${E(EXPERIENCE_LABELS.ai_awareness[Number(a.ai_awareness)-1]||'–')}</td><td>${E(a.comment||'')}</td></tr>`).join('')||'<tr><td colspan="7">Chưa có phản hồi.</td></tr>'}</tbody></table></div></details></section>`;
+}
+
 function teacherRender(lop){hero(false);
  const groups=new Map();for(const a of dashboard.attempts){const key=a.code+'|'+a.task;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(a);}
  const paired=[...groups.values()].filter(g=>g.some(a=>a.version===1)&&g.some(a=>a.version===2));
  const needs=dashboard.attempts.filter(a=>a.status!=='done'||a.feedback?.can_gv_xem).length;
- $('#app').innerHTML=`<section class="card"><div class="row"><h2>Hồ sơ học tập</h2><button id="logout" class="ghost">Đăng xuất</button></div><div class="row"><input id="filter" maxlength="12" value="${E(lop)}" placeholder="Lọc lớp" style="max-width:180px"><button id="filterGo">Lọc</button><button id="export" class="ghost">Xuất minh chứng CSV</button><button id="print" class="ghost">In / PDF</button></div><p>${dashboard.attempts.length} bài nộp · ${paired.length} bài có bản sửa · ${needs} bài cần thầy cô xem</p><p class="muted">Hiển thị tối đa 500 bài gần nhất. Mỗi mã HS là một lượt vào học. Điểm AI chỉ để tham khảo.</p></section>${summary()}<section class="card"><h3>Phiếu đầu–cuối</h3><div class="scroll"><table><thead><tr><th>Mã phiên</th><th>Lớp</th><th>Thời điểm</th><th>Kết quả</th></tr></thead><tbody>${dashboard.assessments.map(a=>`<tr><td>${E(a.code)}</td><td>${E(a.lop)}</td><td>${a.phase==='truoc'?'Đầu vào':'Cuối hoạt động'}</td><td>${a.score}/3</td></tr>`).join('')||'<tr><td colspan="4">Chưa có dữ liệu.</td></tr>'}</tbody></table></div></section>${[...groups.values()].map(g=>`<section class="card"><h3>${E(g[0].code)} · ${E(g[0].lop)} · ${E(g[0].task)}</h3><div class="grid">${[1,2].map(v=>{const a=g.find(a=>a.version===v);if(!a)return '<div class="subtle">Chưa có bản sửa.</div>';return `<article><h3>${v===1?'Bản đầu':'Bản sửa'}</h3>${work(a)}${feedback(a)}${a.review?`<div class="subtle"><b>Giáo viên: ${a.review.scores.reduce((x,y)=>x+y,0)}/6</b><p>${E(a.review.note)}</p></div>`:''}<form class="review" data-id="${a.id}"><details><summary>Đánh giá / điều chỉnh của giáo viên</summary>${cat.rubric.map((r,i)=>`<label>${E(r.label)} <select name="s${i}">${[0,1,2].map(n=>`<option ${a.review?.scores[i]===n?'selected':''}>${n}</option>`).join('')}</select></label>`).join('')}<label>Nhận xét và lí do điều chỉnh<textarea name="note" maxlength="1500" required>${E(a.review?.note||'')}</textarea></label><button>Lưu đánh giá</button></details></form></article>`;}).join('')}</div></section>`).join('')||'<section class="card">Chưa có bài làm. Dữ liệu sẽ xuất hiện sau khi học sinh nộp.</section>'}`;
+ $('#app').innerHTML=`<section class="card"><div class="row"><h2>Hồ sơ học tập</h2><button id="logout" class="ghost">Đăng xuất</button></div><div class="row"><input id="filter" maxlength="12" value="${E(lop)}" placeholder="Lọc lớp" style="max-width:180px"><button id="filterGo">Lọc</button><button id="export" class="ghost">Xuất minh chứng CSV</button><button id="print" class="ghost">In / PDF</button></div><p>${dashboard.attempts.length} bài nộp · ${paired.length} bài có bản sửa · ${needs} bài cần thầy cô xem</p><p class="muted">Hiển thị tối đa 500 bài gần nhất. Mỗi mã HS là một lượt vào học. Điểm AI chỉ để tham khảo.</p></section>${summary()}${experienceTeacherBlock()}<section class="card"><h3>Phiếu đầu–cuối</h3><div class="scroll"><table><thead><tr><th>Mã phiên</th><th>Lớp</th><th>Thời điểm</th><th>Kết quả</th></tr></thead><tbody>${dashboard.assessments.map(a=>`<tr><td>${E(a.code)}</td><td>${E(a.lop)}</td><td>${a.phase==='truoc'?'Đầu vào':'Cuối hoạt động'}</td><td>${a.score}/3</td></tr>`).join('')||'<tr><td colspan="4">Chưa có dữ liệu.</td></tr>'}</tbody></table></div></section>${[...groups.values()].map(g=>`<section class="card"><h3>${E(g[0].code)} · ${E(g[0].lop)} · ${E(g[0].task)}</h3><div class="grid">${[1,2].map(v=>{const a=g.find(a=>a.version===v);if(!a)return '<div class="subtle">Chưa có bản sửa.</div>';return `<article><h3>${v===1?'Bản đầu':'Bản sửa'}</h3>${work(a)}${feedback(a)}${a.review?`<div class="subtle"><b>Giáo viên: ${a.review.scores.reduce((x,y)=>x+y,0)}/6</b><p>${E(a.review.note)}</p></div>`:''}<form class="review" data-id="${a.id}"><details><summary>Đánh giá / điều chỉnh của giáo viên</summary>${cat.rubric.map((r,i)=>`<label>${E(r.label)} <select name="s${i}">${[0,1,2].map(n=>`<option ${a.review?.scores[i]===n?'selected':''}>${n}</option>`).join('')}</select></label>`).join('')}<label>Nhận xét và lí do điều chỉnh<textarea name="note" maxlength="1500" required>${E(a.review?.note||'')}</textarea></label><button>Lưu đánh giá</button></details></form></article>`;}).join('')}</div></section>`).join('')||'<section class="card">Chưa có bài làm. Dữ liệu sẽ xuất hiện sau khi học sinh nộp.</section>'}`;
  $('#filterGo').onclick=e=>guarded(e.target,()=>teacherLoad($('#filter').value));$('#print').onclick=()=>window.print();
+ $('#exportExperiences').onclick=()=>{
+  const q=x=>'"'+String(x??'').replace(/^[=+@-]/,"'$&").replace(/"/g,'""')+'"';
+  const rows=[['Ngày','Lớp','Mã phiên','Dễ sử dụng','Hữu ích nhất','Nhận thức về AI','Góp ý'],
+   ...(dashboard.experiences||[]).map(a=>[new Date(a.created_at).toLocaleString('vi-VN'),a.lop,a.code,
+     EXPERIENCE_LABELS.ease[Number(a.ease)-1]||'',EXPERIENCE_LABELS.helpful[Number(a.helpful)-1]||'',EXPERIENCE_LABELS.ai_awareness[Number(a.ai_awareness)-1]||'',a.comment||''])];
+  const url=URL.createObjectURL(new Blob(['\\ufeff'+rows.map(r=>r.map(q).join(',')).join('\\r\\n')],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download='ThapChamAI_PhanHoiHocSinh.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ };
  $('#logout').onclick=e=>guarded(e.target,async()=>{await api({action:'teacher_logout'});teacherToken='';try{sessionStorage.removeItem('tc_teacher_session')}catch{}teacherLogin();});
  document.querySelectorAll('.review').forEach(f=>f.onsubmit=e=>{e.preventDefault();guarded(f.querySelector('button'),async()=>{await api({action:'teacher_review',attempt_id:f.dataset.id,scores:[0,1,2].map(i=>Number(f.elements['s'+i].value)),note:f.elements.note.value});await teacherLoad(lop);notice('Đã lưu đánh giá của giáo viên; giữ nguyên phản hồi AI và lịch sử đánh giá.');});});
  $('#export').onclick=()=>{const quote=x=>'"'+String(x??'').replace(/^[=+@-]/,"'$&").replace(/"/g,'""')+'"';const rows=[['Thời gian','Mã phiên','Lớp','Nhiệm vụ','Phiên bản','Kết luận','Bằng chứng','Giải thích','Nguồn','Điểm AI','Điểm GV','Nhận xét GV'],...dashboard.attempts.map(a=>[new Date(a.created_at).toLocaleString('vi-VN'),a.code,a.lop,a.task,a.version,a.body.ket_luan,a.body.bang_chung,a.body.giai_thich,(a.body.nguon||[]).join('; '),a.feedback?.tong,a.review?.scores.reduce((x,y)=>x+y,0),a.review?.note])];const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='ThapChamAI_MinhChung.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
