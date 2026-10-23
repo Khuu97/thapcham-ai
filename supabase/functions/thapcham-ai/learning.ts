@@ -32,12 +32,15 @@ export function validateFeedback(out:any, task:any, body:any){
   const a=out.tieu_chi.find((x:any)=>x.key===r.key);
   if(!a || !Number.isInteger(a.diem) || a.diem<0 || a.diem>2 || typeof a.nhan_xet!=='string' || !a.nhan_xet.trim())throw Error('AI_FORMAT');
   const quote=String(a.trich_dan||'').slice(0,500);
-  if(quote && !Object.values(body).filter(x=>typeof x==='string').some((x:any)=>x.includes(quote)))throw Error('AI_QUOTE');
-  return {key:r.key,diem:a.diem,nhan_xet:a.nhan_xet.slice(0,600),trich_dan:quote};
+  // Trích dẫn không khớp nguyên văn bài học sinh thì bỏ trích dẫn, không loại cả phản hồi.
+  const ok=!quote||Object.values(body).filter(x=>typeof x==='string').some((x:any)=>x.includes(quote));
+  return {key:r.key,diem:a.diem,nhan_xet:a.nhan_xet.slice(0,600),trich_dan:ok?quote:''};
  });
- if(!Array.isArray(out.nguon)||out.nguon.some((x:any)=>!allowed.includes(x)) || !out.nguon.length)throw Error('AI_SOURCE');
+ // Chỉ giữ nguồn thuộc nhiệm vụ; nếu AI không ghi nguồn hợp lệ thì dùng nguồn của nhiệm vụ.
+ const nguon=(Array.isArray(out.nguon)?out.nguon:[]).filter((x:any)=>allowed.includes(x));
+ if(!nguon.length)nguon.push(...allowed);
  if(typeof out.goi_y!=='string'||!out.goi_y.trim())throw Error('AI_FORMAT');
- return {tieu_chi,tong:tieu_chi.reduce((s,a)=>s+a.diem,0),nguon:out.nguon,goi_y:out.goi_y.slice(0,700),thay_doi:String(out.thay_doi||'').slice(0,700),can_gv_xem:out.can_gv_xem===true};
+ return {tieu_chi,tong:tieu_chi.reduce((s,a)=>s+a.diem,0),nguon,goi_y:out.goi_y.slice(0,700),thay_doi:String(out.thay_doi||'').slice(0,700),can_gv_xem:out.can_gv_xem===true};
 }
 export function recommend(feedback:any){
  if(!feedback)return {task:'Q1',reason:'Bắt đầu với quan sát có hướng dẫn.'};

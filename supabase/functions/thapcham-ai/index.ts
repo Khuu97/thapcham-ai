@@ -6,7 +6,8 @@ import { CLAIMS } from "./legacy.ts";
 import { cycle, hash, limit, teacher } from "./cycle.ts";
 
 const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { prepare: false, max: 3 });
-const MODELS = ["gemini-2.5-flash", "gemini-flash-latest"];
+// Thứ tự thử: model chính → model nhẹ (ít bị quá tải hơn). Model không tồn tại (404/400) được bỏ qua ngay.
+const MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest"];
 const LIMIT_PER_10MIN = 25;
 
 // ===== BỘ TƯ LIỆU (giáo viên duyệt & chỉnh) =====
@@ -92,14 +93,14 @@ async function gemini(systemText: string, contents: unknown[], temperature: numb
   const deadline = Date.now() + 44000;
   let last = "UNKNOWN";
   for (const model of MODELS) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 1; attempt++) { // 1 lượt/model, chuyển model nhanh khi quá tải
       const remaining = deadline - Date.now();
       if (remaining < 2500) throw new Error("GEMINI_BUSY");
       let status = 0;
       try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
           method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-          body, signal: AbortSignal.timeout(Math.min(16000, remaining - 1000))
+          body, signal: AbortSignal.timeout(Math.min(12000, remaining - 1000))
         });
         status = response.status;
         if (response.ok) {
@@ -115,8 +116,8 @@ async function gemini(systemText: string, contents: unknown[], temperature: numb
         const errorText = (await response.text()).slice(0, 250);
         last = `${status}: ${errorText}`;
         if (status === 401 || status === 403) throw new Error("GEMINI_AUTH");
-        if (![404, 429, 500, 502, 503, 504].includes(status)) throw new Error("GEMINI_REQUEST_FAILED");
-        if (status === 404) break; // unavailable model: switch model immediately
+        if (![400, 404, 429, 500, 502, 503, 504].includes(status)) throw new Error("GEMINI_REQUEST_FAILED");
+        if (status === 404 || status === 400) break; // unavailable model: switch model immediately
       } catch (error) {
         const code = (error as Error).message || "";
         if (["GEMINI_AUTH", "GEMINI_REQUEST_FAILED", "GEMINI_EMPTY", "GEMINI_INVALID_JSON"].includes(code)) throw error;
