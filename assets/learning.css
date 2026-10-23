@@ -28,71 +28,68 @@
 @media(max-width:760px){.tapOptions{grid-template-columns:1fr}.tapOption{min-height:60px;text-align:left;justify-content:flex-start}.evidenceCard{min-height:56px}}
 
 
-/* Đồng bộ tông Phòng học với trang 3D, giữ độ tương phản và kích thước chạm. */
-:root{
- --ink:#e6f6f8;--muted:#b4d0d5;--teal:#68f6ff;--cream:#061014;
- --line:#31545b;--gold:#a6ff66;--white:#0d1d22;--error:#ffb1a9;
-}
-body{background:#061014;color:#e6f6f8;font-size:16px}
-header{background:#0d1d22;border-color:var(--line)}
-header .brand{color:#e6f6f8}
-.brand span{color:#a6ff66}
-a{color:#68f6ff}
-nav a{font-size:16px}
-h1,h2,h3,h4{color:#e6f6f8}
-.eyebrow{color:#a6ff66}
-.steps span,.tag{background:#0d1d22;color:#e6f6f8;border-color:var(--line);font-size:16px}
-.card{background:#0d1d22;color:#e6f6f8;border-color:var(--line)}
-.subtle,.readonly{background:#173038;color:#e6f6f8}
-.muted,small,.tasknav small{color:#b4d0d5}
-button,.button{min-height:48px;background:#176c77;color:#f1feff;font-size:16px;border:1px solid #367783}
-button:hover,.button:hover{border-color:#68f6ff}
-button:disabled{opacity:.5}
-.ghost{background:#163139;color:#e6f6f8;border-color:#375861}
-input,textarea,select{min-height:48px;background:#10262c;color:#e6f6f8;border-color:#4b737a;font-size:16px}
-input::placeholder,textarea::placeholder{color:#b4d0d5}
-input[type=checkbox],input[type=radio]{min-height:0;accent-color:#68f6ff}
-fieldset{border-color:var(--line)}
-.source{background:#12292f;border-left-color:#a6ff66}
-.source small,.source p{color:#d2e8eb}
-.feedback{background:#123138;border-color:#3f7981;color:#e6f6f8}
-.feedback blockquote{border-left-color:#68f6ff}
-.error,#notice:not(:empty){background:#382923;color:#ffe9d7;border-left-color:#ffd36d}
-.score,.feedbackBrief .stars{color:#a6ff66}
-.tapOption,.evidenceCard{background:#10272e;color:#e6f6f8;border-color:#3a6068;font-size:16px}
-.tapOption.pick,.evidenceCard.pick{background:#16424a;border-color:#68f6ff;box-shadow:0 0 0 2px rgba(104,246,255,.18)}
-.tapOption.pick::before,.evidenceCard.pick::before{color:#a6ff66}
-.evidenceCard small{font-size:16px;color:#a9f5fa}
-.evidenceCard span{font-size:16px}
-.reasonMeta{font-size:16px;color:#b4d0d5}
-.detectiveBadge{background:#143128;border-color:#a6ff66}
-.detectiveBadge p{font-size:16px}
-#viewer{border-color:var(--line)}
-#viewer .viewerHead{background:#0d1d22}
-#viewer .viewerHead a{color:#68f6ff;font-size:16px}
-#viewer .viewerHead button{min-height:48px;height:auto;font-size:16px}
-table td,table th{border-color:var(--line);color:#e6f6f8;font-size:16px}
-.tasknav button{background:#0d1d22;color:#e6f6f8;border-color:var(--line)}
-.tasknav button.active{background:#16424a;border-color:#68f6ff}
-.learningTop{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:56px;margin:0 0 18px}
+/* Giao diện sáng, tương phản cao: CÂU HỎI (vàng) tách rõ với BÀI LÀM (trắng) và NHẬN XÉT AI (xanh lá). */
+:root{--ink:#13303a;--muted:#4a636b;--teal:#0d6c76;--cream:#eef3f4;--line:#c9d8dc;--gold:#d99a00;--white:#fff;--error:#a12a1f}
+body{background:#eef3f4;color:#13303a;font-size:17px}
+header{background:#fff;border-color:var(--line)}
+.brand{color:#13303a}.brand span{color:#d99a00}
+a{color:#0d6c76}
+h1,h2,h3,h4{color:#13303a}
+h4{margin:22px 0 10px;font-size:18px}
+.eyebrow{color:#0d6c76}
+.card{background:#fff;border:1px solid var(--line);box-shadow:0 2px 10px rgba(19,48,58,.06)}
+.muted,small{color:#4a636b}
+button,.button{min-height:48px;background:#0d6c76;color:#fff;font-size:17px;border:0;font-weight:700}
+button:hover,.button:hover{background:#0a5860}
+.ghost{background:#e4eef0;color:#13303a}
+.ghost:hover{background:#d4e4e7}
+button.wide,.button.wide{display:block;width:100%;margin-top:14px;min-height:54px;font-size:18px}
+input,textarea,select{min-height:48px;background:#fff;color:#13303a;border:2px solid #b7cbd0;font-size:17px}
+input:focus,textarea:focus{border-color:#0d6c76;outline:none}
+input[type=checkbox],input[type=radio]{min-height:0;width:22px;height:22px;accent-color:#0d6c76;vertical-align:middle}
+label.consent{display:flex;gap:10px;align-items:center;font-weight:600;margin:18px 0 4px}
+fieldset{border-color:var(--line);background:#fafcfc}
+fieldset label{padding:8px 4px}
+/* Câu hỏi */
+.questionCard{background:#fff7dc;border:2px solid #f0c94a;border-left:8px solid #d99a00}
+.qLabel,.aLabel{display:inline-block;font-size:13px!important;font-weight:800;letter-spacing:.08em;padding:4px 10px;border-radius:999px;margin-bottom:10px}
+.qLabel{background:#d99a00;color:#fff}
+.qText{font-size:18px;font-weight:600;line-height:1.55}
+/* Bài làm */
+.answerCard{border:2px solid #b9d3d8}
+.aLabel{background:#0d6c76;color:#fff}
+.tapOption,.evidenceCard{background:#fff;color:#13303a;border:2px solid #b7cbd0;font-size:17px;box-shadow:none}
+.tapOption:not(.pick):hover,.evidenceCard:not(.pick):hover{border-color:#0d6c76;background:#f2f9fa}
+.tapOption.pick,.evidenceCard.pick{background:#0d6c76;color:#fff;border-color:#0d6c76}
+.tapOption.pick::before,.evidenceCard.pick::before{color:#fff}
+.evidenceCard small{color:#0d6c76;font-weight:700;font-size:14px}
+.evidenceCard.pick small{color:#d9f4f6}
+.readonly{background:#f2f6f7;color:#13303a;border:1px solid var(--line)}
+/* Nhận xét AI */
+.feedback{background:#e9f7ee;border:2px solid #8fcca5;color:#13303a}
+.feedback .aLabel{background:#1f8a4c}
+.feedbackBrief .stars{color:#e0a100;font-size:28px}
+.error,#notice:not(:empty){background:#fff3d6;color:#5a3d00;border-left:5px solid #d99a00;font-weight:600}
+.detectiveBadge{background:#fff7dc;border-color:#d99a00}
+/* Thanh tiến độ & menu */
+.learningTop{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:56px;margin:0 0 14px}
 .layout{display:block}
-.lessonContent{max-width:860px;margin:0 auto}
-.taskProgress{display:flex;gap:12px;align-items:center;justify-content:center;flex:1}
-.progressDot{height:48px;min-height:48px;min-width:64px;padding:12px 18px;background:#10272e;border:2px solid #41616a;border-radius:999px;display:flex;align-items:center;justify-content:center}
-.progressDot span{display:block;width:13px;height:13px;border-radius:50%;background:#41616a}
-.progressDot.active{border-color:#68f6ff;background:#14343d}
-.progressDot.active span{background:#68f6ff}
-.progressDot.done span{background:#a6ff66}
-.progressDot.done{border-color:#a6ff66}
+.lessonContent{max-width:820px;margin:0 auto}
+.taskProgress{display:flex;gap:10px;align-items:center;justify-content:center;flex:1}
+.progressDot{height:44px;min-height:44px;min-width:56px;padding:0 14px;background:#fff;border:2px solid #b7cbd0;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.progressDot span{display:block;width:13px;height:13px;border-radius:50%;background:#b7cbd0}
+.progressDot.active{border-color:#0d6c76;background:#e3f2f4}.progressDot.active span{background:#0d6c76}
+.progressDot.done{border-color:#1f8a4c}.progressDot.done span{background:#1f8a4c}
 .moreMenu{position:relative;margin:0}
-.moreMenu summary{display:grid;place-items:center;cursor:pointer;list-style:none;min-width:48px;height:48px;padding:0 12px;border:1px solid #436872;background:#10272e;color:#e6f6f8;border-radius:12px;font-size:27px;line-height:1}
+.moreMenu summary{display:grid;place-items:center;cursor:pointer;list-style:none;min-width:48px;height:44px;padding:0 12px;border:2px solid #b7cbd0;background:#fff;color:#13303a;border-radius:12px;font-size:24px;line-height:1}
 .moreMenu summary::-webkit-details-marker{display:none}
-.morePanel{position:absolute;right:0;top:54px;width:min(285px,86vw);z-index:25;border:1px solid #416b73;background:#0d1d22;box-shadow:0 16px 42px #0009;border-radius:14px;padding:12px;display:grid;gap:8px}
+.morePanel{position:absolute;right:0;top:52px;width:min(285px,86vw);z-index:25;border:1px solid var(--line);background:#fff;box-shadow:0 16px 42px rgba(0,0,0,.18);border-radius:14px;padding:12px;display:grid;gap:8px}
 .morePanel button{width:100%;text-align:left}
-.sessionLabel{font-size:16px;overflow-wrap:anywhere;margin:2px 0 8px;color:#b4d0d5}
-.feedbackBrief small,.feedback small{font-size:16px;color:#b4d0d5}
-@media(max-width:760px){.progressDot{min-width:56px;padding:12px}.card{padding:16px}.tapOptions{grid-template-columns:1fr}.lessonContent{width:100%}}
-
+.sessionLabel{overflow-wrap:anywhere;margin:2px 0 8px;color:#4a636b}
+#viewer{border-color:var(--line)}
+table td,table th{border-color:var(--line);color:#13303a}
+th{background:#f2f6f7}
+@media(max-width:760px){main{padding:14px}.card{padding:16px}.tapOptions{grid-template-columns:1fr}.hero{padding:6px 0 16px}.hero h1{font-size:30px;letter-spacing:-1px}}
 
 /* Kích thước chữ tối thiểu cho nội dung học sinh và bảng giáo viên */
 body,header,main,footer,.card p,.card li,.card label,.card small,.card button,
@@ -103,3 +100,7 @@ input,textarea,select,table,th,td,fieldset,legend,.eyebrow,
 footer{color:var(--muted)}
 .tapOption,.evidenceCard,.moreMenu summary,.progressDot{min-height:48px}
 @media(max-width:760px){.taskProgress{gap:8px}.progressDot{min-width:50px}}
+.card p.qText{font-size:18px}
+.feedback .aLabel{font-size:13px}
+legend{padding:0 8px;font-weight:700;color:#13303a}
+.tapOption,.evidenceCard{transition:none}
