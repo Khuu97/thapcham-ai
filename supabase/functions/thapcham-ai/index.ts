@@ -6,8 +6,8 @@ import { CLAIMS } from "./legacy.ts";
 import { cycle, hash, limit, teacher } from "./cycle.ts";
 
 const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { prepare: false, max: 3 });
-// Thứ tự thử: model chính → model nhẹ (ít bị quá tải hơn). Model không tồn tại (404/400) được bỏ qua ngay.
-const MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest"];
+// Thứ tự thử: model nhẹ (nhanh, ít quá tải) → model chính → bản mới nhất. Model không tồn tại (404/400) được bỏ qua ngay.
+const MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-flash-latest"];
 const LIMIT_PER_10MIN = 25;
 
 // ===== BỘ TƯ LIỆU (giáo viên duyệt & chỉnh) =====
@@ -84,16 +84,17 @@ async function allow(table: "hoi_dap" | "tham_tu", phien: string) {
 async function gemini(systemText: string, contents: unknown[], temperature: number): Promise<any> {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_KEY_MISSING");
-  const body = JSON.stringify({
+  const makeBody = (noThinking: boolean) => JSON.stringify({
     systemInstruction: { parts: [{ text: systemText }] }, contents,
-    generationConfig: { temperature, maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 0 }, responseMimeType: "application/json" },
+    generationConfig: { temperature, maxOutputTokens: 4096, ...(noThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}), responseMimeType: "application/json" },
     safetySettings: ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map((category) => ({ category, threshold: "BLOCK_LOW_AND_ABOVE" })),
   });
-  const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
   const deadline = Date.now() + 44000;
   let last = "UNKNOWN";
   for (const model of MODELS) {
-    for (let attempt = 0; attempt < 1; attempt++) { // 1 lượt/model, chuyển model nhanh khi quá tải
+    // Lượt 1: tắt "thinking" cho nhanh. Nếu model mới không nhận tham số này (400) thì thử lại 1 lần không có nó.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const body = makeBody(attempt === 0);
       const remaining = deadline - Date.now();
       if (remaining < 2500) throw new Error("GEMINI_BUSY");
       let status = 0;
@@ -117,16 +118,16 @@ async function gemini(systemText: string, contents: unknown[], temperature: numb
         last = `${status}: ${errorText}`;
         if (status === 401 || status === 403) throw new Error("GEMINI_AUTH");
         if (![400, 404, 429, 500, 502, 503, 504].includes(status)) throw new Error("GEMINI_REQUEST_FAILED");
-        if (status === 404 || status === 400) break; // unavailable model: switch model immediately
+        console.warn("Gemini model", model, "lượt", attempt + 1, "→", status);
+        if (status === 400 && attempt === 0) continue; // thử lại không có thinkingConfig
+        break; // 404/400/429/5xx: chuyển sang model tiếp theo
       } catch (error) {
         const code = (error as Error).message || "";
         if (["GEMINI_AUTH", "GEMINI_REQUEST_FAILED", "GEMINI_EMPTY", "GEMINI_INVALID_JSON"].includes(code)) throw error;
         last = code || last;
+        console.warn("Gemini model", model, "lỗi:", code.slice(0, 60));
       }
-      if (attempt === 0 && status !== 404) {
-        const pause = 650 + Math.floor(Math.random() * 300);
-        if (Date.now() + pause + 2500 < deadline) await sleep(pause);
-      }
+      if (status !== 400) break; // lỗi mạng/quá thời gian: chuyển model
     }
   }
   console.error("Gemini exhausted models and retries:", last);
