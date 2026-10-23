@@ -26,21 +26,24 @@ export const QUIZ = {
  sau:[{q:'Một hình AI có nhiều cửa giống nhau. Có thể suy ra cửa thật của di tích không?',options:['Không, cần kiểm tra ảnh và hồ sơ di tích','Có, vì hình rất chi tiết','Có, nếu AI khẳng định'],answer:0},{q:'Trích đúng tên UNESCO nhưng nội dung không liên quan nhận định thì sao?',options:['Vẫn là bằng chứng đầy đủ','Chưa hỗ trợ được nhận định','Không cần giải thích nữa'],answer:1},{q:'Cách kết luận có trách nhiệm khi hồ sơ mô hình thiếu số đo là gì?',options:['Khẳng định kích thước chính xác','Tự ước lượng rồi coi là số đo thật','Nêu chưa đủ căn cứ và đề xuất đối chiếu số đo'],answer:2}]
 };
 export function validateFeedback(out:any, task:any, body:any){
- if(!out || !Array.isArray(out.tieu_chi) || out.tieu_chi.length!==3) throw Error('AI_FORMAT');
+ // Chấp nhận nhiều cách AI trình bày (mảng hoặc đối tượng, điểm dạng chuỗi) rồi chuẩn hóa; chỉ loại khi thiếu hẳn điểm.
+ const raw=out&&out.tieu_chi;
+ const list:any[]=Array.isArray(raw)?raw:(raw&&typeof raw==='object'?Object.entries(raw).map(([key,v]:any)=>({key,...(typeof v==='object'?v:{diem:v})})):[]);
  const allowed=task.sources;
- const tieu_chi=RUBRIC.map(r=>{
-  const a=out.tieu_chi.find((x:any)=>x.key===r.key);
-  if(!a || !Number.isInteger(a.diem) || a.diem<0 || a.diem>2 || typeof a.nhan_xet!=='string' || !a.nhan_xet.trim())throw Error('AI_FORMAT');
+ const texts=Object.values(body).filter(x=>typeof x==='string') as string[];
+ const tieu_chi=RUBRIC.map((r,i)=>{
+  const a=list.find((x:any)=>String(x?.key||x?.tieu_chi||'').toLowerCase().replace(/\s+/g,'_')===r.key)||list[i];
+  const d=Math.round(Number(a?.diem));
+  if(!a||!Number.isFinite(d))throw Error('AI_FORMAT');
   const quote=String(a.trich_dan||'').slice(0,500);
   // Trích dẫn không khớp nguyên văn bài học sinh thì bỏ trích dẫn, không loại cả phản hồi.
-  const ok=!quote||Object.values(body).filter(x=>typeof x==='string').some((x:any)=>x.includes(quote));
-  return {key:r.key,diem:a.diem,nhan_xet:a.nhan_xet.slice(0,600),trich_dan:ok?quote:''};
+  return {key:r.key,diem:Math.max(0,Math.min(2,d)),nhan_xet:String(a.nhan_xet||'Xem lại tiêu chí này.').slice(0,600),trich_dan:(!quote||texts.some(x=>x.includes(quote)))?quote:''};
  });
  // Chỉ giữ nguồn thuộc nhiệm vụ; nếu AI không ghi nguồn hợp lệ thì dùng nguồn của nhiệm vụ.
- const nguon=(Array.isArray(out.nguon)?out.nguon:[]).filter((x:any)=>allowed.includes(x));
+ const nguon=(Array.isArray(out?.nguon)?out.nguon:[]).filter((x:any)=>allowed.includes(x));
  if(!nguon.length)nguon.push(...allowed);
- if(typeof out.goi_y!=='string'||!out.goi_y.trim())throw Error('AI_FORMAT');
- return {tieu_chi,tong:tieu_chi.reduce((s,a)=>s+a.diem,0),nguon,goi_y:out.goi_y.slice(0,700),thay_doi:String(out.thay_doi||'').slice(0,700),can_gv_xem:out.can_gv_xem===true};
+ const goi_y=String(out?.goi_y||'Đối chiếu lại bài với tiêu chí và tủ tư liệu, rồi sửa phần còn yếu.').slice(0,700);
+ return {tieu_chi,tong:tieu_chi.reduce((s,a)=>s+a.diem,0),nguon,goi_y,thay_doi:String(out?.thay_doi||'').slice(0,700),can_gv_xem:out?.can_gv_xem===true};
 }
 export function recommend(feedback:any){
  if(!feedback)return {task:'Q1',reason:'Bắt đầu với quan sát có hướng dẫn.'};
