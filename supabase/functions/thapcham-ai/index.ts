@@ -196,7 +196,7 @@ Deno.serve(async (r) => {
     if (raw.length > 20000) return json({ok:false,error:"Nội dung quá dài."},413);
     const req = JSON.parse(raw || "{}");
     const ip = await hash(r.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown");
-    if (["catalog","teacher_login","teacher_logout","learning_dashboard","teacher_review","enroll","progress","assessment","solution","hint","submit_attempt"].includes(req.action)) return json(await cycle(req,sql,gemini,ip));
+    if (["catalog","teacher_login","teacher_logout","learning_dashboard","teacher_review","enroll","progress","assessment","solution","hint","submit_attempt","experience_submit"].includes(req.action)) return json(await cycle(req,sql,gemini,ip));
     if (req.action === "resources") return json({ok:true,sources:TU_LIEU});
     if (["chat","judge"].includes(req.action)) {await limit(sql,"legacy-ai:"+ip,40);await limit(sql,"global-ai",400,86400);}
     if(req.action === "stats" && !(await teacher(sql,req))) await limit(sql,"teacher:"+ip,8);
@@ -216,7 +216,7 @@ Deno.serve(async (r) => {
   } catch (e) {
     console.error(e);
     const code=(e as Error).message;
-    const messages:Record<string,string>={AUTH:"Phiên giáo viên hết hạn hoặc mã chưa đúng.",SESSION:"Phiên học chưa hợp lệ. Hãy vào lại phòng học.",CONSENT:"Cần xác nhận thông tin dữ liệu trước khi bắt đầu.",INPUT:"Kiểm tra lại các trường thông tin.",RATE_LIMIT:"Đã đạt giới hạn lượt sử dụng. Vui lòng thử lại sau.",FINISH_TASKS:"Hãy nộp đủ ba nhiệm vụ trước khi làm phiếu cuối.",PRE_FIRST:"Hãy làm phiếu đầu vào trước.",GEMINI_KEY_MISSING:"Trợ lý AI chưa được cấu hình (thiếu GEMINI_API_KEY).",GEMINI_AUTH:"Trợ lý AI bị Google từ chối (key sai hoặc bị chặn).",GEMINI_BUSY:"Trợ lý AI đang quá tải, em thử lại sau ít phút.",REVISE_FIRST:"Hãy nộp bài và chờ xử lí trước khi tiếp tục."};
+    const messages:Record<string,string>={AUTH:"Phiên giáo viên hết hạn hoặc mã chưa đúng.",SESSION:"Phiên học chưa hợp lệ. Hãy vào lại phòng học.",CONSENT:"Cần xác nhận thông tin dữ liệu trước khi bắt đầu.",INPUT:"Kiểm tra lại các trường thông tin.",RATE_LIMIT:"Đã đạt giới hạn lượt sử dụng. Vui lòng thử lại sau.",FINISH_TASKS:"Hãy nộp đủ ba nhiệm vụ trước khi làm phiếu cuối.",PRE_FIRST:"Hãy làm phiếu đầu vào trước.",GEMINI_KEY_MISSING:"Trợ lý AI chưa được cấu hình (thiếu GEMINI_API_KEY).",GEMINI_AUTH:"Trợ lý AI bị Google từ chối (key sai hoặc bị chặn).",GEMINI_BUSY:"Trợ lý AI đang quá tải, em thử lại sau ít phút.",REVISE_FIRST:"Hãy nộp bài và chờ xử lí trước khi tiếp tục.",POST_FIRST:"Hãy hoàn thành phiếu cuối trước khi góp ý."};
     return json({ok:false,error:messages[code]||"Máy chủ chưa xử lí được. Bản nháp trên thiết bị vẫn được giữ.",code:messages[code]?code:"SERVER"},code==="AUTH"?401:400);
   }
 });

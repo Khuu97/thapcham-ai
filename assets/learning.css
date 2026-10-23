@@ -104,3 +104,21 @@ footer{color:var(--muted)}
 .feedback .aLabel{font-size:13px}
 legend{padding:0 8px;font-weight:700;color:#13303a}
 .tapOption,.evidenceCard{transition:none}
+
+/* Phiếu phản hồi trải nghiệm: chọn nhanh, dễ đọc và không tạo áp lực chấm điểm */
+.experienceForm{max-width:780px;margin-left:auto;margin-right:auto}
+.experienceForm h2{margin-bottom:12px}
+.experienceField{margin:16px 0;padding:12px 15px;border:1px solid #bdd4d9;border-radius:14px;background:#f7fbfc}
+.experienceField legend{font-size:17px;font-weight:700;line-height:1.45;padding:0 6px}
+.experienceOptions{display:grid;gap:8px;margin-top:6px}
+.experienceChoice{display:flex;gap:12px;align-items:center;cursor:pointer;background:#fff;border:1px solid #d0dfe3;border-radius:11px;padding:10px 12px;font-size:16px;min-height:50px}
+.experienceChoice:hover{background:#ecf8fa;border-color:#0d6c76}
+.experienceChoice input{width:22px;height:22px;flex:0 0 22px;margin:0}
+.experienceChoice span{flex:1}
+.experienceActions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.experienceActions .wide{flex:1;min-width:180px;margin:0}
+.experienceActions .ghost{min-height:50px}
+.experienceSummary{padding:12px 0;border-bottom:1px solid var(--line)}
+.experienceSummary h4{margin:5px 0}
+.experienceSummary p{margin:6px 0;line-height:1.6}
+@media(max-width:760px){.experienceField{padding:10px}.experienceActions{flex-direction:column;align-items:stretch}.experienceActions .wide,.experienceActions .ghost{width:100%}}
