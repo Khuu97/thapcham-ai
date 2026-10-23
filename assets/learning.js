@@ -49,6 +49,19 @@ let token=storage.get('tc_learning_token'),cat=null,progress=null,taskId='Q1',bu
 try{teacherToken=sessionStorage.getItem('tc_teacher_session')||''}catch{}
 const notice=s=>{$('#notice').textContent=s||'';};
 async function api(data){const r=await fetch(cfg.API_URL,{method:'POST',headers,signal:AbortSignal.timeout(60000),body:JSON.stringify({...data,learner_token:token,teacher_token:teacherToken})});let d;try{d=await r.json()}catch{throw Error('Máy chủ chưa trả lời. Bản nháp vẫn được giữ.')}if(!d.ok){if(d.code==='AUTH'){teacherToken='';try{sessionStorage.removeItem('tc_teacher_session')}catch{}}throw Error(d.error||'Chưa xử lí được.')}return d;}
+// Mỗi lượt lưu bài được tự thử lại tối đa một lần, cách 4 giây khi API/mạng lỗi.
+async function submitWithRetry(payload){
+ let error=null;
+ for(let attempt=0;attempt<2;attempt++){
+  try{
+   const data=await api(payload);
+   if(data.status!=='error'&&!data.ai_unavailable&&!data.ai_error)return {ok:true,data};
+   error=Error('AI_UNAVAILABLE');
+  }catch(e){error=e;}
+  if(attempt===0)await new Promise(resolve=>setTimeout(resolve,4000));
+ }
+ return {ok:false,error};
+}
 async function guarded(button,fn){if(busy)return;busy=true;if(button)button.disabled=true;notice('');try{await fn()}catch(e){notice(e.name==='TimeoutError'?'Máy chủ phản hồi chậm. Bản nháp vẫn được giữ; thử tải lại tiến độ trước khi nộp lại.':e.message)}finally{busy=false;if(button)button.disabled=false;}}
 const srcs=ids=>ids.map(id=>{const s=cat.sources.find(s=>s.id===id);return `<article class="source" id="${E(id)}"><b>${E(s.id)} · ${E(s.title)}</b><p>${E(s.text)}</p><small>${E(s.author)} · ${E(s.section)}</small>${s.url?`<a href="${E(s.url)}" target="_blank" rel="noopener">Mở nguồn gốc ↗</a>`:''}</article>`}).join('');
 function rubric(){return `<details><summary>Tiêu chí phản hồi · 0–2 điểm mỗi mục</summary>${cat.rubric.map(r=>`<p><b>${E(r.label)}</b><br>${r.levels.map((v,i)=>`${i}: ${E(v)}`).join('<br>')}</p>`).join('')}<small>Rubric của ứng dụng; giáo viên rà soát trước khi dùng để đánh giá chính thức.</small></details>`;}
@@ -68,7 +81,7 @@ function viewer(on){const v=$('#viewer');if(!v)return;v.hidden=!on;if(on&&!v.que
 function intro(){
  viewer(false);
  $('#app').innerHTML=`<section class="card narrow"><h2>Bắt đầu hành trình học tập</h2><p>Ba nhiệm vụ • Khoảng 20 phút • AI phản hồi theo bằng chứng</p><label for="class">Lớp hoặc mã nhóm</label><input id="class" maxlength="12" placeholder="Ví dụ: 10.1"><div class="subtle" style="margin-top:16px"><b>Dữ liệu học tập</b><p>Ứng dụng tạo mã ngẫu nhiên; không cần họ tên hay email. Bài làm được lưu trên máy chủ để giáo viên xem. Nội dung bài và tư liệu được gửi tới Gemini để tạo phản hồi. Không nhập thông tin cá nhân.</p><p>Mã phiên lưu trên trình duyệt này. Nếu dùng máy chung, chọn “Kết thúc trên thiết bị” khi học xong.</p></div><label><input id="consent" type="checkbox">Em đã đọc thông tin và tham gia theo hướng dẫn của giáo viên.</label><button id="start">Vào học</button><p class="muted">Mô hình 3D là tháp tổng hợp, không phải bản sao chính xác Po Klong Garai.</p></section>`;
- $('#start').onclick=e=>guarded(e.target,async()=>{if(!$('#consent').checked||!$('#class').value.trim())throw Error('Nhập lớp và xác nhận thông tin dữ liệu.');if(!token)token=crypto.randomUUID();storage.set('tc_learning_token',token);progress=await api({action:'enroll',lop:$('#class').value,consent:true});render();});
+ $('#start').onclick=e=>guarded(e.target,async()=>{const classCode=$('#class').value.replace(/\s+/g,'').toLocaleUpperCase('vi');$('#class').value=classCode;if(!$('#consent').checked||!classCode)throw Error('Nhập lớp và xác nhận thông tin dữ liệu.');if(!token)token=crypto.randomUUID();storage.set('tc_learning_token',token);progress=await api({action:'enroll',lop:classCode,consent:true});render();});
 }
 async function refresh(){progress=await api({action:'progress'});render();}
 function quiz(phase){viewer(false);const questions=cat.quiz[phase];$('#app').innerHTML=`<section class="card narrow"><p class="eyebrow">${phase==='truoc'?'TRƯỚC KHI KHÁM PHÁ':'SAU KHI HOÀN THÀNH'}</p><h2>Phiếu ${phase==='truoc'?'đầu vào':'cuối hoạt động'}</h2><p>Tự trả lời, chưa dùng trợ lý AI. Mỗi phiếu chỉ nộp một lần.</p>${questions.map((q,i)=>`<fieldset><legend>${i+1}. ${E(q.q)}</legend>${q.options.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}">${E(o)}</label>`).join('')}</fieldset>`).join('')}<button id="quizSubmit">Nộp phiếu</button></section>`;$('#quizSubmit').onclick=e=>guarded(e.target,async()=>{const answers=questions.map((_,i)=>document.querySelector(`input[name=q${i}]:checked`)?.value);if(answers.some(x=>x===undefined))throw Error('Hãy trả lời đủ các câu.');await api({action:'assessment',phase,answers:answers.map(Number)});await refresh();});}
@@ -76,13 +89,25 @@ function render(){
  if(!progress.assessments.some(a=>a.phase==='truoc'))return quiz('truoc');
  viewer(true);
  const t=cat.tasks.find(x=>x.id===taskId),rows=progress.attempts.filter(a=>a.task===t.id),first=rows.find(a=>a.version===1),second=rows.find(a=>a.version===2);
- const completed=cat.tasks.filter(t=>progress.attempts.some(a=>a.task===t.id&&a.status!=='pending')).length,total=cat.tasks.length,next=cat.tasks[cat.tasks.indexOf(t)+1];
- const version=first?2:1;let draft={};try{draft=JSON.parse(storage.get('tc_draft_'+token+'_'+t.id+'_'+version)||'{}')}catch{}
+ const completed=cat.tasks.filter(t=>progress.attempts.some(a=>a.task===t.id&&a.status==='done')).length,total=cat.tasks.length,next=cat.tasks[cat.tasks.indexOf(t)+1];
+ const version=first?.status==='done'?2:1;let draft={};try{draft=JSON.parse(storage.get('tc_draft_'+token+'_'+t.id+'_'+version)||'{}')}catch{}
  const current=second||null,base=Object.keys(draft).length?draft:(first?.body||{});
  const sentenceCards=t.sources.flatMap(id=>{const source=cat.sources.find(s=>s.id===id);return source?splitSentences(source.text).map((text,i)=>({id,text,key:id+'-'+i})):[];});
  const selectedAnswer=t.id==='Q3'?(base.chon||String(base.ket_luan||'').replace(/^Nhận định này /,'')):base.ket_luan;
  const selectedEvidenceIndex=sentenceCards.findIndex(c=>c.text===base.bang_chung&&(base.nguon||[]).includes(c.id));
- $('#app').innerHTML=`<div class="row" style="margin-bottom:18px"><span class="tag">${E(progress.learner.code)} · ${E(progress.learner.lop)}</span><span class="tag">Đã nộp ${completed}/${total} nhiệm vụ</span><button id="reload" class="ghost">Tải lại tiến độ</button><button id="end" class="ghost">Kết thúc trên thiết bị</button></div><div class="layout"><aside class="tasknav">${cat.tasks.map(q=>`<button data-task="${q.id}" class="${q.id===taskId?'active':''}"><small>${E(q.kind)} · ${q.id}</small>${E(q.title)}</button>`).join('')}</aside><section><article class="card"><p class="eyebrow">${E(t.kind)} · ${t.id}</p><h2>${E(t.title)}</h2><p>${E(t.prompt)}</p><p class="muted">👆 Xoay, phóng to mô hình 3D ở phía trên để quan sát.</p>${rubric()}<details><summary>Tủ tư liệu · ${t.sources.join(', ')}</summary>${srcs(t.sources)}<p><a href="https://whc.unesco.org/en/list/949/gallery/" target="_blank" rel="noopener">Xem ảnh di tích thật tại UNESCO ↗</a></p></details></article>
+ $('#app').innerHTML=`<div class="learningTop">
+ <nav class="taskProgress" role="group" aria-label="Tiến độ ba nhiệm vụ">
+  ${cat.tasks.map((q,i)=>`<button type="button" data-task="${E(q.id)}" class="progressDot ${q.id===taskId?'active':''} ${progress.attempts.some(a=>a.task===q.id&&a.status==='done')?'done':''}" aria-label="Nhiệm vụ ${i+1}: ${E(q.title)}" aria-current="${q.id===taskId?'step':'false'}" title="${E(q.title)}"><span aria-hidden="true"></span></button>`).join('')}
+ </nav>
+ <details class="moreMenu"><summary aria-label="Tùy chọn phiên học" title="Tùy chọn phiên học">⋯</summary>
+  <div class="morePanel"><p class="sessionLabel">${E(progress.learner.lop)} · ${E(progress.learner.code)}</p>
+   <button type="button" id="reload" class="ghost">Tải lại tiến độ</button>
+   <button type="button" id="end" class="ghost">Kết thúc trên thiết bị</button>
+  </div>
+ </details>
+</div>
+<div class="layout"><section class="lessonContent">
+ <article class="card"><p class="eyebrow">${E(t.kind)} · ${E(t.id)}</p><h2>${E(t.title)}</h2><p>${E(t.prompt)}</p><p class="muted">👆 Xoay, phóng to mô hình 3D ở phía trên để quan sát.</p><details><summary>Tủ tư liệu · ${t.sources.join(', ')}</summary>${srcs(t.sources)}<p><a href="https://whc.unesco.org/en/list/949/gallery/" target="_blank" rel="noopener">Xem ảnh di tích thật tại UNESCO ↗</a></p></details></article>
  ${first?`<article class="card"><h3>Bản đầu đã lưu</h3>${work(first)}${feedback(first)}${first.status!=='done'?'<button id="retryFirst" class="ghost">Thử lấy phản hồi bản đầu</button>':''}</article>`:''}
  ${current?`<article class="card"><h3>Bản sửa đã lưu</h3>${work(current)}${feedback(current)}${current.status!=='done'?'<button id="retrySecond" class="ghost">Thử lấy phản hồi bản sửa</button>':''}<button id="solution" class="ghost">Đối chiếu hướng dẫn</button><div id="solutionText"></div></article>`:`<article class="card"><h3>${version===1?'Ba bước hoàn thành nhiệm vụ':'Sửa bài sau phản hồi (không bắt buộc)'}</h3>${version===2&&next?`<button class="ghost nextTask" data-next="${next.id}">Bỏ qua, sang nhiệm vụ ${next.id} →</button>`:''}<p class="muted">Chạm một kết luận, chọn một câu có nguồn rồi giải thích bằng một câu. Bản nháp được lưu trên thiết bị.</p>
  <h4>1. Chọn một kết luận</h4>
@@ -91,7 +116,7 @@ function render(){
  <div class="evidenceCards" id="evidenceCards">${sentenceCards.map((c,i)=>`<button type="button" class="evidenceCard ${selectedEvidenceIndex===i?'pick':''}" data-evidence-index="${i}" aria-pressed="${selectedEvidenceIndex===i}"><small>${E(c.id)} · ${E(cat.sources.find(s=>s.id===c.id)?.title||'Tư liệu')}</small><span>${E(c.text)}</span></button>`).join('')}</div>
  <label for="reason"><b>3. Giải thích bằng một câu</b></label><textarea id="reason" rows="2" maxlength="300" placeholder="Vì tư liệu cho thấy…">${E(String(base.giai_thich||'').slice(0,300))}</textarea><div class="reasonMeta"><span>Giải thích vì sao bằng chứng hỗ trợ kết luận.</span><span id="reasonCount">${String(base.giai_thich||'').slice(0,300).length}/300</span></div>
  <button id="submit" ${first?.status==='pending'?'disabled':''}>${version===1?'Lưu bài & nhận phản hồi AI':'Lưu bản sửa & nhận phản hồi AI'}</button><p id="saveStatus" class="muted" aria-live="polite"></p></article>`}
- <article class="card">${completed===total?`<div class="detectiveBadge" role="status"><span class="medal">🏅</span><div><strong>THÁM TỬ SỬ LIỆU</strong><p>Em đã nộp đủ ba nhiệm vụ. Xem lại phản hồi rồi làm phiếu cuối.</p></div></div>`:''}<h3>Hoàn thành hoạt động</h3>${progress.assessments.some(a=>a.phase==='sau')?`<p>Phiếu đầu vào: <b>${progress.assessments.find(a=>a.phase==='truoc').score}/3</b> · Phiếu cuối: <b>${progress.assessments.find(a=>a.phase==='sau').score}/3</b></p><p class="muted">Hai phiếu ngắn chỉ phản ánh một phần kết quả; cần giáo viên đối chiếu bài làm.</p>`:`<button id="post" ${completed<total?'disabled':''}>Làm phiếu cuối hoạt động</button><p class="muted">${completed<total?`Mở sau khi nộp đủ ${total} nhiệm vụ (còn ${total-completed}). Bản sửa là không bắt buộc.`:'Em đã nộp đủ nhiệm vụ – hãy làm phiếu cuối nhé!'}</p>`}</article></section></div>`;
+ <article class="card completionCard">${completed===total?`<div class="detectiveBadge" role="status"><span class="medal">🏅</span><div><strong>THÁM TỬ SỬ LIỆU</strong><p>Em đã nộp đủ ba nhiệm vụ. Xem lại phản hồi rồi làm phiếu cuối.</p></div></div>`:''}<h3>Hoàn thành hoạt động</h3>${progress.assessments.some(a=>a.phase==='sau')?`<p>Phiếu đầu vào: <b>${progress.assessments.find(a=>a.phase==='truoc').score}/3</b> · Phiếu cuối: <b>${progress.assessments.find(a=>a.phase==='sau').score}/3</b></p><p class="muted">Hai phiếu ngắn chỉ phản ánh một phần kết quả; cần giáo viên đối chiếu bài làm.</p>`:`<button id="post" ${completed<total?'disabled':''}>Làm phiếu cuối hoạt động</button><p class="muted">${completed<total?`Mở sau khi nộp đủ ${total} nhiệm vụ (còn ${total-completed}). Bản sửa là không bắt buộc.`:'Em đã nộp đủ nhiệm vụ – hãy làm phiếu cuối nhé!'}</p>`}</article></section></div>`;
  document.querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.task;render();});document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.next;render();scrollTo({top:0,behavior:'smooth'});});
  $('#reload').onclick=e=>guarded(e.target,refresh);$('#end').onclick=()=>{if(busy)return;for(const t of cat.tasks)for(const v of [1,2])storage.remove('tc_draft_'+token+'_'+t.id+'_'+v);storage.remove('tc_learning_token');token=null;progress=null;intro();notice('Đã kết thúc phiên trên thiết bị. Bài đã nộp vẫn được lưu cho giáo viên.');};
  const read=()=>{
@@ -115,17 +140,30 @@ function render(){
     if(!body.ket_luan){notice('Em hãy chọn một kết luận.');return;}
     if(!body.bang_chung||!body.nguon.length){notice('Em hãy chọn một câu tư liệu làm bằng chứng.');return;}
     if(!explanationOkay(body.giai_thich)){notice('Viết rõ hơn một chút nhé');return;}
+    if(version===2&&first){
+      const normal=s=>String(s||'').trim().replace(/\s+/g,' ');
+      const earlier=first.body||{};
+      const same=['ket_luan','chon','bang_chung','giai_thich'].every(key=>normal(body[key])===normal(earlier[key])) &&
+        JSON.stringify(body.nguon)===JSON.stringify(earlier.nguon||[]);
+      if(same){notice('Em chưa sửa gì');return;}
+    }
     save();notice('Đang lưu bài và xin phản hồi AI…');
-    const r=await api({action:'submit_attempt',task:t.id,version,body});
+    const result=await submitWithRetry({action:'submit_attempt',task:t.id,version,body});
+    if(!result.ok){
+      try{await refresh();}catch(_){}
+      notice('AI đang bận, chờ vài giây rồi bấm gửi lại');
+      return;
+    }
     await refresh();
-    notice((r.message?r.message+(r.ai_error?' ['+r.ai_error+']':''):'')||(r.pending?'Bài đang được xử lí; dùng Tải lại tiến độ sau ít giây.':'Đã lưu bài và phản hồi. Điểm AI là tham khảo.'));
+    const response=result.data;
+    notice(response.message|| (response.pending?'Bài đang được xử lí; em có thể mở Tùy chọn để tải lại tiến độ.':'Đã lưu bài và phản hồi. Điểm AI là tham khảo.'));
+
   });
  }
- for(const [id,a] of [['retryFirst',first],['retrySecond',second]])if($("#"+id))$("#"+id).onclick=e=>guarded(e.target,async()=>{await api({action:'submit_attempt',task:t.id,version:a.version,body:a.body});await refresh();});
+ for(const [id,a] of [['retryFirst',first],['retrySecond',second]])if($("#"+id))$("#"+id).onclick=e=>guarded(e.target,async()=>{const result=await submitWithRetry({action:'submit_attempt',task:t.id,version:a.version,body:a.body});if(result.ok){await refresh();}else{try{await refresh();}catch(_){}notice('AI đang bận, chờ vài giây rồi bấm gửi lại');}});
  if($('#solution'))$('#solution').onclick=e=>guarded(e.target,async()=>{const r=await api({action:'solution',task:t.id});$('#solutionText').textContent=r.answer;});
- $('#hint').onclick=e=>guarded(e.target,async()=>{const r=await api({action:'hint',task:t.id,question:$('#hintQ').value});$('#hintText').textContent=r.hint;});
  if($('#post'))$('#post').onclick=()=>quiz('sau');
- const latest=second?.feedback||first?.feedback;if(latest){const weak=latest.tieu_chi.reduce((a,b)=>a.diem<=b.diem?a:b);const target=latest.tong===6?'Q5':({ket_luan:'Q3',bang_chung:'Q3',giai_thich:'Q5'})[weak.key];const tip=document.createElement('p');tip.className='subtle';tip.textContent=`Gợi ý luyện tiếp: ${target} · ${latest.tong===6?'Tổng hợp kiến thức':cat.rubric.find(r=>r.key===weak.key).label}.`;$('.tasknav').appendChild(tip);}
+ const latest=second?.feedback||first?.feedback;if(latest){const weak=latest.tieu_chi.reduce((a,b)=>a.diem<=b.diem?a:b);const target=latest.tong===6?'Q5':({ket_luan:'Q3',bang_chung:'Q3',giai_thich:'Q5'})[weak.key];const tip=document.createElement('p');tip.className='subtle';tip.textContent=`Gợi ý luyện tiếp: ${target} · ${latest.tong===6?'Tổng hợp kiến thức':cat.rubric.find(r=>r.key===weak.key).label}.`;$('.completionCard')?.appendChild(tip);}
 }
 function teacherLogin(){
  viewer(false);
