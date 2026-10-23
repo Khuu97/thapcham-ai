@@ -33,7 +33,8 @@ export async function cycle(req:any,sql:any,gemini:any,ip:string){
   const cl=clip(req.lop,12).toUpperCase();
   const attempts=await sql`select a.id,a.task,a.version,a.body,a.feedback,a.status,a.created_at,l.code,l.lop,(select json_build_object('scores',r.scores,'note',r.note,'created_at',r.created_at) from thapcham.reviews r where r.attempt_id=a.id order by r.id desc limit 1) review from thapcham.attempts a join thapcham.learners l using(token_hash) where (${cl}='' or l.lop=${cl}) order by a.created_at desc limit 500`;
   const assessments=await sql`select l.code,l.lop,a.phase,a.score,a.created_at from thapcham.assessments a join thapcham.learners l using(token_hash) where (${cl}='' or l.lop=${cl}) order by a.created_at desc limit 500`;
-  return {ok:true,attempts,assessments,limit:500};
+  const experiences=await sql`select e.ease,e.helpful,e.ai_awareness,e.comment,e.created_at,l.code,l.lop from thapcham.experience_feedback e join thapcham.learners l using(token_hash) where (${cl}='' or l.lop=${cl}) order by e.created_at desc limit 500`;
+  return {ok:true,attempts,assessments,experiences,limit:500};
  }
  const token=clip(req.learner_token,100);
  if(!/^[0-9a-f-]{36}$/.test(token))throw Error('SESSION');
@@ -48,7 +49,24 @@ export async function cycle(req:any,sql:any,gemini:any,ip:string){
  if(action==='enroll'||action==='progress'){
   const attempts=await sql`select id,task,version,body,feedback,status from thapcham.attempts where token_hash=${th} order by task,version`;
   const assessments=await sql`select phase,score from thapcham.assessments where token_hash=${th}`;
-  return {ok:true,learner,attempts,assessments};
+  const [experience]=await sql`select ease,helpful,ai_awareness,comment,created_at from thapcham.experience_feedback where token_hash=${th}`;
+  return {ok:true,learner,attempts,assessments,experience:experience||null};
+ }
+ if(action==='experience_submit'){
+  // Phiếu trải nghiệm riêng với bài kiểm tra, gửi đúng một lần sau phiếu cuối.
+  const [end]=await sql`select 1 from thapcham.assessments where token_hash=${th} and phase='sau'`;
+  if(!end)throw Error('POST_FIRST');
+  const ease=Number(req.ease),helpful=Number(req.helpful),ai_awareness=Number(req.ai_awareness);
+  if(!Number.isInteger(ease)||ease<1||ease>3||
+     !Number.isInteger(helpful)||helpful<1||helpful>4||
+     !Number.isInteger(ai_awareness)||ai_awareness<1||ai_awareness>3)throw Error('INPUT');
+  const comment=clip(req.comment,500);
+  await sql`insert into thapcham.experience_feedback(token_hash,ease,helpful,ai_awareness,comment)
+    values(${th},${ease},${helpful},${ai_awareness},${comment})
+    on conflict(token_hash) do nothing`;
+  const [saved]=await sql`select ease,helpful,ai_awareness,comment,created_at
+    from thapcham.experience_feedback where token_hash=${th}`;
+  return {ok:true,saved:true,experience:saved};
  }
  if(action==='assessment'){
   if(!['truoc','sau'].includes(req.phase))throw Error('INPUT');
