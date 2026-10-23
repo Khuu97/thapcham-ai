@@ -240,7 +240,7 @@ function teacherRender(lop){hero(false);
   const rows=[['Ngày','Lớp','Mã phiên','Dễ sử dụng','Hữu ích nhất','Nhận thức về AI','Góp ý'],
    ...(dashboard.experiences||[]).map(a=>[new Date(a.created_at).toLocaleString('vi-VN'),a.lop,a.code,
      EXPERIENCE_LABELS.ease[Number(a.ease)-1]||'',EXPERIENCE_LABELS.helpful[Number(a.helpful)-1]||'',EXPERIENCE_LABELS.ai_awareness[Number(a.ai_awareness)-1]||'',a.comment||''])];
-  const url=URL.createObjectURL(new Blob(['\\ufeff'+rows.map(r=>r.map(q).join(',')).join('\\r\\n')],{type:'text/csv;charset=utf-8'}));
+  const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
   const a=document.createElement('a');a.href=url;a.download='ThapChamAI_PhanHoiHocSinh.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
  $('#logout').onclick=e=>guarded(e.target,async()=>{await api({action:'teacher_logout'});teacherToken='';try{sessionStorage.removeItem('tc_teacher_session')}catch{}teacherLogin();});
