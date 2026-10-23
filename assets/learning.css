@@ -26,3 +26,69 @@
 .detectiveBadge strong{letter-spacing:.05em}
 .detectiveBadge p{font-size:13px;margin:4px 0 0}
 @media(max-width:760px){.tapOptions{grid-template-columns:1fr}.tapOption{min-height:60px;text-align:left;justify-content:flex-start}.evidenceCard{min-height:56px}}
+
+
+/* Đồng bộ tông Phòng học với trang 3D, giữ độ tương phản và kích thước chạm. */
+:root{
+ --ink:#e6f6f8;--muted:#b4d0d5;--teal:#68f6ff;--cream:#061014;
+ --line:#31545b;--gold:#a6ff66;--white:#0d1d22;--error:#ffb1a9;
+}
+body{background:#061014;color:#e6f6f8;font-size:16px}
+header{background:#0d1d22;border-color:var(--line)}
+header .brand{color:#e6f6f8}
+.brand span{color:#a6ff66}
+a{color:#68f6ff}
+nav a{font-size:16px}
+h1,h2,h3,h4{color:#e6f6f8}
+.eyebrow{color:#a6ff66}
+.steps span,.tag{background:#0d1d22;color:#e6f6f8;border-color:var(--line);font-size:16px}
+.card{background:#0d1d22;color:#e6f6f8;border-color:var(--line)}
+.subtle,.readonly{background:#173038;color:#e6f6f8}
+.muted,small,.tasknav small{color:#b4d0d5}
+button,.button{min-height:48px;background:#176c77;color:#f1feff;font-size:16px;border:1px solid #367783}
+button:hover,.button:hover{border-color:#68f6ff}
+button:disabled{opacity:.5}
+.ghost{background:#163139;color:#e6f6f8;border-color:#375861}
+input,textarea,select{min-height:48px;background:#10262c;color:#e6f6f8;border-color:#4b737a;font-size:16px}
+input::placeholder,textarea::placeholder{color:#b4d0d5}
+input[type=checkbox],input[type=radio]{min-height:0;accent-color:#68f6ff}
+fieldset{border-color:var(--line)}
+.source{background:#12292f;border-left-color:#a6ff66}
+.source small,.source p{color:#d2e8eb}
+.feedback{background:#123138;border-color:#3f7981;color:#e6f6f8}
+.feedback blockquote{border-left-color:#68f6ff}
+.error,#notice:not(:empty){background:#382923;color:#ffe9d7;border-left-color:#ffd36d}
+.score,.feedbackBrief .stars{color:#a6ff66}
+.tapOption,.evidenceCard{background:#10272e;color:#e6f6f8;border-color:#3a6068;font-size:16px}
+.tapOption.pick,.evidenceCard.pick{background:#16424a;border-color:#68f6ff;box-shadow:0 0 0 2px rgba(104,246,255,.18)}
+.tapOption.pick::before,.evidenceCard.pick::before{color:#a6ff66}
+.evidenceCard small{font-size:16px;color:#a9f5fa}
+.evidenceCard span{font-size:16px}
+.reasonMeta{font-size:16px;color:#b4d0d5}
+.detectiveBadge{background:#143128;border-color:#a6ff66}
+.detectiveBadge p{font-size:16px}
+#viewer{border-color:var(--line)}
+#viewer .viewerHead{background:#0d1d22}
+#viewer .viewerHead a{color:#68f6ff;font-size:16px}
+#viewer .viewerHead button{min-height:48px;height:auto;font-size:16px}
+table td,table th{border-color:var(--line);color:#e6f6f8;font-size:16px}
+.tasknav button{background:#0d1d22;color:#e6f6f8;border-color:var(--line)}
+.tasknav button.active{background:#16424a;border-color:#68f6ff}
+.learningTop{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:56px;margin:0 0 18px}
+.layout{display:block}
+.lessonContent{max-width:860px;margin:0 auto}
+.taskProgress{display:flex;gap:12px;align-items:center;justify-content:center;flex:1}
+.progressDot{height:48px;min-height:48px;min-width:64px;padding:12px 18px;background:#10272e;border:2px solid #41616a;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.progressDot span{display:block;width:13px;height:13px;border-radius:50%;background:#41616a}
+.progressDot.active{border-color:#68f6ff;background:#14343d}
+.progressDot.active span{background:#68f6ff}
+.progressDot.done span{background:#a6ff66}
+.progressDot.done{border-color:#a6ff66}
+.moreMenu{position:relative;margin:0}
+.moreMenu summary{display:grid;place-items:center;cursor:pointer;list-style:none;min-width:48px;height:48px;padding:0 12px;border:1px solid #436872;background:#10272e;color:#e6f6f8;border-radius:12px;font-size:27px;line-height:1}
+.moreMenu summary::-webkit-details-marker{display:none}
+.morePanel{position:absolute;right:0;top:54px;width:min(285px,86vw);z-index:25;border:1px solid #416b73;background:#0d1d22;box-shadow:0 16px 42px #0009;border-radius:14px;padding:12px;display:grid;gap:8px}
+.morePanel button{width:100%;text-align:left}
+.sessionLabel{font-size:16px;overflow-wrap:anywhere;margin:2px 0 8px;color:#b4d0d5}
+.feedbackBrief small,.feedback small{font-size:16px;color:#b4d0d5}
+@media(max-width:760px){.progressDot{min-width:56px;padding:12px}.card{padding:16px}.tapOptions{grid-template-columns:1fr}.lessonContent{width:100%}}
