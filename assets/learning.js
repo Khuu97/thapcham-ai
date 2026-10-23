@@ -4,7 +4,7 @@ const cfg=window.THAPCHAM_CONFIG||{},headers={'Content-Type':'application/json',
 const storage={get(k){try{return localStorage.getItem(k)}catch{return null}},set(k,v){try{localStorage.setItem(k,v)}catch{}},remove(k){try{localStorage.removeItem(k)}catch{}}};
 
 const ANSWER_OPTIONS = {
-  Q1: ['Mái gồm nhiều tầng thu nhỏ dần, chóp là khối nhọn trên cùng', 'Mái và chóp giống hệt nhau, không phân biệt được', 'Chóp nằm dưới mái'],
+  Q1: ['Mái nằm phía trên thân, chóp là phần cao nhất', 'Mái và chóp giống hệt nhau, không phân biệt được', 'Chóp nằm dưới mái'],
   Q3: ['Đúng', 'Sai', 'Chưa đủ căn cứ'],
   Q5: ['Sai – người Chăm tiếp nhận và biến đổi ảnh hưởng Ấn Độ, không chỉ sao chép', 'Đúng – tháp Chăm chỉ là bản sao đền Ấn Độ', 'Không thể biết vì không có tư liệu']
 };
