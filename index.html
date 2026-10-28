@@ -2000,7 +2000,7 @@ document.getElementById('explodeRange').oninput=(e)=>updateExplosion(+e.target.v
 if(document.documentElement.classList.contains('embed')){
   const quick=document.querySelector('.quick'),btn=document.createElement('button');
   btn.id='btnExplodeEmbed';btn.type='button';btn.textContent='Tách bộ phận';
-  btn.onclick=()=>{const range=document.getElementById('explodeRange'),on=+range.value<1;range.value=on?70:0;updateExplosion(on?.7:0);btn.textContent=on?'Ghép lại':'Tách bộ phận';btn.classList.toggle('active',on);};
+  btn.onclick=()=>{const range=document.getElementById('explodeRange'),on=+range.value<1;range.value=on?15:0;updateExplosion(on?.15:0);btn.textContent=on?'Ghép lại':'Tách bộ phận';btn.classList.toggle('active',on);};
   if(quick)quick.prepend(btn);
 }
 document.getElementById('btnReset').onclick=()=>setView('front');
