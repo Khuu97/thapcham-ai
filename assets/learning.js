@@ -89,7 +89,7 @@ function feedback(a){
  const score=Math.max(0,Math.min(6,Number(f.tong)||0));
  const best=f.tieu_chi.reduce((a,b)=>b.diem>a.diem?b:a);
  const weak=f.tieu_chi.reduce((a,b)=>b.diem<a.diem?b:a);
- const strength=best.diem>0?best.nhan_xet:'Em đã nộp bài. Đọc gợi ý bên dưới rồi thử sửa nhé.';
+ const strength=best.diem>0?best.nhan_xet:'Em đã nộp bài. Xem kết quả và gợi ý để rút kinh nghiệm cho nhiệm vụ sau.';
  const improvement=score===6?(f.goi_y||'Thử vận dụng lập luận này với một tư liệu khác.'):weak.nhan_xet;
  return `<div class="feedback"><div class="feedbackBrief"><div class="stars" role="img" aria-label="${score} trong 6 điểm tham khảo">${'★'.repeat(score)}${'☆'.repeat(6-score)}</div><b class="aLabel">AI NHẬN XÉT · ${score}/6</b></div><p><b>Làm tốt:</b> ${E(strength)}</p>${score===6?'<p><b>Xuất sắc!</b> Em đã chọn đúng và dùng bằng chứng hợp lí.</p>':`<p><b>Cần sửa:</b> ${E(improvement)}</p>`}${f.can_gv_xem?'<small>Giáo viên cần xem lại phản hồi này.</small>':''}</div>`;
 }
