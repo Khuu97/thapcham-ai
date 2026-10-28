@@ -13,17 +13,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Kiểm tra đã có khóa Firebase
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Triển khai Firebase Hosting
         env:
           SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           if [ -z "$SA" ]; then
-            echo "::error::Chưa có secret FIREBASE_SERVICE_ACCOUNT trong Settings → Secrets and variables → Actions."
+            echo "::error::Chưa có secret FIREBASE_SERVICE_ACCOUNT."
             exit 1
           fi
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: thapcham3d
-          channelId: live
+          KEY="$RUNNER_TEMP/sa.json"
+          printf '%s' "$SA" > "$KEY"
+          if ! node -e "const k=require(process.argv[1]);if(!k.client_email||!k.private_key)process.exit(2);console.log('Khóa hợp lệ, dự án: '+k.project_id)" "$KEY"; then
+            echo "::error::Nội dung secret FIREBASE_SERVICE_ACCOUNT không phải tệp JSON khóa tài khoản dịch vụ hợp lệ."
+            exit 1
+          fi
+          export GOOGLE_APPLICATION_CREDENTIALS="$KEY"
+          set +e
+          npx --yes firebase-tools@latest deploy --only hosting --project thapcham3d --non-interactive > "$RUNNER_TEMP/out.txt" 2>&1
+          code=$?
+          set -e
+          grep -v -i "private_key" "$RUNNER_TEMP/out.txt"
+          if [ $code -ne 0 ]; then
+            grep -i -E "error|denied|permission|HTTP" "$RUNNER_TEMP/out.txt" | grep -v -i "private_key" | tail -5 | while IFS= read -r line; do echo "::error::$line"; done
+            exit $code
+          fi
+          rm -f "$KEY"
