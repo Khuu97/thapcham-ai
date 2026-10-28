@@ -7,7 +7,10 @@ import { cycle, hash, limit, teacher } from "./cycle.ts";
 
 const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { prepare: false, max: 3 });
 // Thứ tự thử: model nhẹ (nhanh, ít quá tải) → model chính → bản mới nhất. Model không tồn tại (404/400) được bỏ qua ngay.
-const MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-flash-latest"];
+const MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"]; // các bản 2.5 đã ngừng (404)
+// Cách tắt/giảm "thinking" khác nhau giữa các thế hệ model; thử lần lượt và nhớ cách đã chạy được để các lượt sau nhanh ngay.
+const THINKING: Record<string, unknown>[] = [{}]; // dùng mặc định của model; các tham số tắt thinking bị từ chối hoặc chậm hơn
+let working: { model: string; variant: number } | null = null;
 const LIMIT_PER_10MIN = 25;
 
 // ===== BỘ TƯ LIỆU (giáo viên duyệt & chỉnh) =====
@@ -84,24 +87,25 @@ async function allow(table: "hoi_dap" | "tham_tu", phien: string) {
 async function gemini(systemText: string, contents: unknown[], temperature: number): Promise<any> {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_KEY_MISSING");
-  const makeBody = (noThinking: boolean) => JSON.stringify({
+  const makeBody = (variant: number) => JSON.stringify({
     systemInstruction: { parts: [{ text: systemText }] }, contents,
-    generationConfig: { temperature, maxOutputTokens: 4096, ...(noThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}), responseMimeType: "application/json" },
+    generationConfig: { temperature, maxOutputTokens: 2048, ...THINKING[variant], responseMimeType: "application/json" },
     safetySettings: ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map((category) => ({ category, threshold: "BLOCK_LOW_AND_ABOVE" })),
   });
   const deadline = Date.now() + 44000;
   let last = "UNKNOWN";
-  for (const model of MODELS) {
-    // Lượt 1: tắt "thinking" cho nhanh. Nếu model mới không nhận tham số này (400) thì thử lại 1 lần không có nó.
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const body = makeBody(attempt === 0);
+  const order = working ? [working.model, ...MODELS.filter((m) => m !== working!.model)] : MODELS;
+  for (const model of order) {
+    const start = working && working.model === model ? working.variant : 0;
+    for (let attempt = start; attempt < THINKING.length; attempt++) {
+      const body = makeBody(attempt);
       const remaining = deadline - Date.now();
       if (remaining < 2500) throw new Error("GEMINI_BUSY");
       let status = 0;
       try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
           method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-          body, signal: AbortSignal.timeout(Math.min(12000, remaining - 1000))
+          body, signal: AbortSignal.timeout(Math.min(20000, remaining - 1000))
         });
         status = response.status;
         if (response.ok) {
@@ -112,14 +116,15 @@ async function gemini(systemText: string, contents: unknown[], temperature: numb
           try { parsed = JSON.parse(answer); }
           catch { throw new Error("GEMINI_INVALID_JSON"); }
           if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("GEMINI_INVALID_JSON");
+          working = { model, variant: attempt };
           return parsed;
         }
         const errorText = (await response.text()).slice(0, 250);
         last = `${status}: ${errorText}`;
         if (status === 401 || status === 403) throw new Error("GEMINI_AUTH");
         if (![400, 404, 429, 500, 502, 503, 504].includes(status)) throw new Error("GEMINI_REQUEST_FAILED");
-        console.warn("Gemini model", model, "lượt", attempt + 1, "→", status);
-        if (status === 400 && attempt === 0) continue; // thử lại không có thinkingConfig
+        console.warn("Gemini model", model, "cách", attempt, "→", status, status === 400 ? errorText.slice(0, 120) : "");
+        if (status === 400 && attempt < THINKING.length - 1) continue; // thử cách cấu hình thinking tiếp theo
         break; // 404/400/429/5xx: chuyển sang model tiếp theo
       } catch (error) {
         const code = (error as Error).message || "";

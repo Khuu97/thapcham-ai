@@ -9,12 +9,20 @@ const ANSWER_OPTIONS = {
   N3: ['Không đồng ý, vì người Chăm tiếp nhận rồi biến đổi theo cách riêng', 'Đồng ý, vì người Chăm cũng theo Hindu giáo giống Ấn Độ', 'Không đồng ý, vì người Chăm không chịu ảnh hưởng Ấn Độ']
 };
 // Mỗi nhiệm vụ chỉ hiện 3–4 câu tư liệu chọn lọc: một câu chứng minh được kết luận, các câu còn lại có vẻ liên quan nhưng không đủ.
-const EVIDENCE={N1:[['S3',0],['S6',1],['S7',1],['S6',0]],N2:[['S8',0],['S3',0],['S3',1]],N3:[['S9',0],['S1',1],['S2',0],['S9',1]]};
+const EVIDENCE={N1:[['S3',0],['S6',1,1],['S7',1],['S6',0]],N2:[['S8',0],['S3',0],['S3',1,1]],N3:[['S9',0],['S1',1],['S2',0,1],['S9',1,1]]};
 function evidenceFor(t){
  const all=id=>{const source=cat.sources.find(s=>s.id===id);return source?splitSentences(source.text):[];};
  const pick=EVIDENCE[t.id];
  if(!pick)return t.sources.flatMap(id=>all(id).map((text,i)=>({id,text,key:id+'-'+i})));
- return pick.map(([id,i])=>({id,text:all(id)[i],key:id+'-'+i})).filter(c=>c.text);
+ return pick.map(([id,i,good])=>({id,text:all(id)[i],key:id+'-'+i,good:!!good})).filter(c=>c.text);
+}
+// Kết quả nhanh hiện ngay khi bấm Nộp (không chờ AI): kết luận và bằng chứng có khớp đáp án không.
+let optimistic={};
+function quickResult(t,b){
+ const okC=(b.chon||b.ket_luan)===(ANSWER_OPTIONS[t.id]||[])[0];
+ const cards=evidenceFor(t),okE=cards.some(c=>c.good&&c.text===b.bang_chung&&(b.nguon||[]).includes(c.id));
+ const best=cards.find(c=>c.good);
+ return `<div class="quick"><p class="qk ${okC?'ok':'no'}">${okC?'✓ Kết luận đúng':'✗ Kết luận chưa đúng'}</p>${okC?'':`<p class="qkFix">Kết luận phù hợp: <b>${E((ANSWER_OPTIONS[t.id]||[])[0])}</b></p>`}<p class="qk ${okE?'ok':'no'}">${okE?'✓ Bằng chứng phù hợp':'✗ Câu tư liệu này chưa chứng minh được kết luận'}</p>${okE||!best?'':`<p class="qkFix">Câu tư liệu nên chọn: <b>${E(best.id)}</b> – ${E(best.text)}</p>`}</div>`;
 }
 // Xáo trộn một lần cho mỗi người học/nhiệm vụ, giữ thứ tự khi lưu nháp hay tải lại trang.
 function shuffledOptions(taskId){
@@ -67,7 +75,7 @@ async function submitWithRetry(payload){
    if(data.status!=='error'&&!data.ai_unavailable&&!data.ai_error)return {ok:true,data};
    error=Error('AI_UNAVAILABLE');
   }catch(e){error=e;}
-  if(attempt===0)await new Promise(resolve=>setTimeout(resolve,4000));
+  if(attempt===0)await new Promise(resolve=>setTimeout(resolve,1500));
  }
  return {ok:false,error};
 }
@@ -76,12 +84,12 @@ const srcs=ids=>ids.map(id=>{const s=cat.sources.find(s=>s.id===id);return `<art
 function rubric(){return `<details><summary>Tiêu chí phản hồi · 0–2 điểm mỗi mục</summary>${cat.rubric.map(r=>`<p><b>${E(r.label)}</b><br>${r.levels.map((v,i)=>`${i}: ${E(v)}`).join('<br>')}</p>`).join('')}<small>Rubric của ứng dụng; giáo viên rà soát trước khi dùng để đánh giá chính thức.</small></details>`;}
 function feedback(a){
  if(!a)return '';
- if(a.status!=='done')return `<div class="error">Bài đã lưu. ${a.status==='pending'?'AI đang xử lí.':'AI đang bận. Em bấm nút bên dưới để thử lại.'}</div>`;
+ if(a.status!=='done')return a.status==='pending'?'<div class="aiWait"><span class="spin" aria-hidden="true"></span>AI đang viết nhận xét cho câu giải thích…</div>':'<div class="aiWait">AI chưa nhận xét được câu giải thích. Em vẫn có thể sang nhiệm vụ tiếp; thầy cô sẽ xem bài.</div>';
  const f=a.feedback;if(!f||!Array.isArray(f.tieu_chi)||!f.tieu_chi.length)return '<div class="error">Chưa có phản hồi để hiển thị.</div>';
  const score=Math.max(0,Math.min(6,Number(f.tong)||0));
  const best=f.tieu_chi.reduce((a,b)=>b.diem>a.diem?b:a);
  const weak=f.tieu_chi.reduce((a,b)=>b.diem<a.diem?b:a);
- const strength=best.diem>0?best.nhan_xet:'Em đã nộp bài. Đọc gợi ý bên dưới rồi thử sửa nhé.';
+ const strength=best.diem>0?best.nhan_xet:'Em đã nộp bài. Xem kết quả và gợi ý để rút kinh nghiệm cho nhiệm vụ sau.';
  const improvement=score===6?(f.goi_y||'Thử vận dụng lập luận này với một tư liệu khác.'):weak.nhan_xet;
  return `<div class="feedback"><div class="feedbackBrief"><div class="stars" role="img" aria-label="${score} trong 6 điểm tham khảo">${'★'.repeat(score)}${'☆'.repeat(6-score)}</div><b class="aLabel">AI NHẬN XÉT · ${score}/6</b></div><p><b>Làm tốt:</b> ${E(strength)}</p>${score===6?'<p><b>Xuất sắc!</b> Em đã chọn đúng và dùng bằng chứng hợp lí.</p>':`<p><b>Cần sửa:</b> ${E(improvement)}</p>`}${f.can_gv_xem?'<small>Giáo viên cần xem lại phản hồi này.</small>':''}</div>`;
 }
@@ -94,7 +102,7 @@ function hero(on){const h=document.querySelector('.hero');if(h)h.hidden=!on;}
 let screen={name:'intro',taskId:null};
 function journey(active){
  const has=p=>progress.assessments.some(a=>a.phase===p);
- const taskDone=id=>progress.attempts.some(a=>a.task===id&&a.status==='done');
+ const taskDone=id=>progress.attempts.some(a=>a.task===id)||!!optimistic[id];
  const steps=[{key:'truoc',label:'Phiếu đầu',done:has('truoc')},...cat.tasks.map((t,i)=>({key:t.id,label:'Nhiệm vụ '+(i+1),done:taskDone(t.id),task:t.id})),{key:'sau',label:'Phiếu cuối',done:has('sau')}];
  const idx=Math.max(0,steps.findIndex(s=>s.key===active));
  return `<nav class="journey" aria-label="Lộ trình học"><p class="journeyNow">Bước ${idx+1}/${steps.length}: <b>${E(steps[idx].label)}</b></p><ol>${steps.map((s,i)=>{const cls=`${s.key===active?'active':''} ${s.done?'done':''}`;const inner=`<i aria-hidden="true">${s.done?'✓':i+1}</i><span>${E(s.label)}</span>`;return `<li class="${cls}">${s.task&&has('truoc')?`<button type="button" data-task="${E(s.task)}" aria-current="${s.key===active?'step':'false'}">${inner}</button>`:`<div aria-current="${s.key===active?'step':'false'}">${inner}</div>`}</li>`;}).join('')}</ol></nav>`;
@@ -106,7 +114,7 @@ function nextStepText(){
  if(screen.name==='done')return 'Em đã hoàn thành. Có thể xem lại bài và nhận xét ở từng nhiệm vụ trên thanh lộ trình.';
  if(screen.name!=='task')return '';
  if(screen.state==='pending')return 'Bài đang được AI xem. Chờ vài giây, nếu lâu quá thì bấm "Thử lại".';
- if(screen.state==='feedback')return screen.allDone?'Đọc nhận xét. Em đã nộp đủ 3 nhiệm vụ, kéo xuống cuối trang và bấm "Làm phiếu cuối".':'Đọc nhận xét màu xanh. Em có thể sửa bài một lần, hoặc bấm "Sang câu hỏi tiếp".';
+ if(screen.state==='feedback')return screen.allDone?'Đọc kết quả. Em đã nộp đủ 3 nhiệm vụ, kéo xuống cuối và bấm "Làm phiếu cuối".':'Đọc kết quả và nhận xét, rồi bấm "Sang nhiệm vụ" để làm tiếp.';
  if(!document.querySelector('#answerOptions .tapOption.pick'))return 'Xoay, phóng to mô hình ở trên để quan sát. Sau đó ở mục ① bấm chọn một kết luận.';
  if(!document.querySelector('#evidenceCards .evidenceCard.pick'))return 'Ở mục ②, bấm chọn MỘT câu tư liệu giúp chứng minh kết luận em đã chọn.';
  if(!explanationOkay($('#reason')?.value))return 'Ở mục ③, viết một câu (ít nhất 6 chữ) nói vì sao câu tư liệu đó chứng minh kết luận. Có thể bắt đầu: "Vì tư liệu cho thấy…".';
@@ -147,9 +155,9 @@ function render(){
  if(!progress.assessments.some(a=>a.phase==='truoc'))return quiz('truoc');
  viewer(true);hero(false);
  const t=cat.tasks.find(x=>x.id===taskId),rows=progress.attempts.filter(a=>a.task===t.id),first=rows.find(a=>a.version===1),second=rows.find(a=>a.version===2);
- const completed=cat.tasks.filter(t=>progress.attempts.some(a=>a.task===t.id&&a.status==='done')).length,total=cat.tasks.length,next=cat.tasks[cat.tasks.indexOf(t)+1];
- const version=first?.status==='done'?2:1;let draft={};try{draft=JSON.parse(storage.get('tc_draft_'+token+'_'+t.id+'_'+version)||'{}')}catch{}
- const current=second||null,base=Object.keys(draft).length?draft:(first?.body||{});
+ const completed=cat.tasks.filter(t=>progress.attempts.some(a=>a.task===t.id)).length,total=cat.tasks.length,next=cat.tasks[cat.tasks.indexOf(t)+1];
+ const version=1;let draft={};try{draft=JSON.parse(storage.get('tc_draft_'+token+'_'+t.id+'_'+version)||'{}')}catch{}
+ const shown=first||optimistic[t.id]||null,current=null,base=Object.keys(draft).length?draft:{};
  const sentenceCards=evidenceFor(t);
  const selectedAnswer=base.chon||base.ket_luan;
  const selectedEvidenceIndex=sentenceCards.findIndex(c=>c.text===base.bang_chung&&(base.nguon||[]).includes(c.id));
@@ -164,16 +172,15 @@ function render(){
 </div>`);
  $('#app').innerHTML=`<div class="layout"><section class="lessonContent">
  <article class="card questionCard"><div class="qMeta"><span class="qLabel">Nhiệm vụ ${cat.tasks.indexOf(t)+1}/${total}</span><span class="qKind">${E(t.kind)}</span></div><h2>${E(t.title)}</h2><p class="qText">${E(t.prompt)}</p><ol class="howTo" aria-label="Cách làm"><li>Quan sát mô hình 3D</li><li>Chọn kết luận</li><li>Chọn một câu tư liệu</li><li>Viết một câu giải thích</li></ol></article>
- ${first?`<article class="card answerCard"><span class="aLabel">BÀI EM ĐÃ NỘP</span>${work(first)}${feedback(first)}${first.status!=='done'?'<button id="retryFirst" class="ghost">Thử lại</button>':''}</article>`:''}
- ${current?`<article class="card answerCard"><span class="aLabel">BÀI EM ĐÃ SỬA</span>${work(current)}${feedback(current)}${current.status!=='done'?'<button id="retrySecond" class="ghost">Thử lại</button>':''}${next?`<button class="nextTask wide" data-next="${next.id}">Sang câu hỏi tiếp →</button>`:''}</article>`:`<article class="card answerCard"><span class="aLabel">${version===1?'BÀI LÀM CỦA EM':'SỬA BÀI (KHÔNG BẮT BUỘC)'}</span>${version===2&&next?`<button class="ghost nextTask" data-next="${next.id}">Không sửa, sang câu hỏi tiếp →</button>`:''}
+ ${shown?`<article class="card answerCard"><span class="aLabel">BÀI EM ĐÃ NỘP</span>${quickResult(t,shown.body)}${work(shown)}${feedback(shown)}${shown.status==='error'?'<button id="retryFirst" class="ghost">Xin AI nhận xét lại</button>':''}${next?`<button class="nextTask wide" data-next="${next.id}">Sang nhiệm vụ ${cat.tasks.indexOf(next)+1} →</button>`:''}</article>`:`<article class="card answerCard"><span class="aLabel">BÀI LÀM CỦA EM</span>
  <h4 class="stepHead"><b>1</b>Chọn kết luận em thấy đúng</h4>
  <div class="tapOptions" id="answerOptions">${shuffledOptions(t.id).map(value=>`<button type="button" class="tapOption ${selectedAnswer===value?'pick':''}" data-answer="${E(value)}" aria-pressed="${selectedAnswer===value}">${E(value)}</button>`).join('')}</div>
  <h4 class="stepHead"><b>2</b>Chọn một câu tư liệu làm bằng chứng</h4>
  <div class="evidenceCards" id="evidenceCards">${sentenceCards.map((c,i)=>`<button type="button" class="evidenceCard ${selectedEvidenceIndex===i?'pick':''}" data-evidence-index="${i}" aria-pressed="${selectedEvidenceIndex===i}"><small>${E(c.id)} · ${E(cat.sources.find(s=>s.id===c.id)?.title||'Tư liệu')}</small><span>${E(c.text)}</span></button>`).join('')}</div>
  <label for="reason" class="stepHead"><b>3</b>Viết một câu giải thích</label><p class="stepHint">Vì sao câu tư liệu em chọn chứng minh được kết luận?</p><textarea id="reason" rows="3" maxlength="300" placeholder="Vì tư liệu cho thấy…">${E(String(base.giai_thich||'').slice(0,300))}</textarea><div class="reasonMeta"><span id="wordCount"></span><span id="reasonCount">${String(base.giai_thich||'').slice(0,300).length}/300</span></div>
- <div class="submitBar"><button id="submit" class="wide" ${first?.status==='pending'?'disabled':''}>${version===1?'Nộp bài':'Nộp bản sửa'}</button><p id="saveStatus" class="muted" aria-live="polite"></p></div></article>`}
+ <div class="submitBar"><button id="submit" class="wide">Nộp bài</button><p id="saveStatus" class="muted" aria-live="polite"></p></div></article>`}
  ${completed<total&&!progress.assessments.some(a=>a.phase==='sau')?'':`<article class="card completionCard">${completed===total?`<div class="detectiveBadge" role="status"><span class="medal">🏅</span><div><strong>THÁM TỬ SỬ LIỆU</strong><p>Em đã nộp đủ ba nhiệm vụ. Xem lại phản hồi rồi làm phiếu cuối.</p></div></div>`:''}<h3>Hoàn thành hoạt động</h3>${progress.assessments.some(a=>a.phase==='sau')?`<p>Phiếu đầu vào: <b>${progress.assessments.find(a=>a.phase==='truoc').score}/3</b> · Phiếu cuối: <b>${progress.assessments.find(a=>a.phase==='sau').score}/3</b></p><p class="muted">Hai phiếu ngắn chỉ phản ánh một phần kết quả; cần giáo viên đối chiếu bài làm.</p>`:`<button id="post" class="wide" ${completed<total?'disabled':''}>Làm phiếu cuối hoạt động</button><p class="muted">${completed<total?`Mở sau khi nộp đủ ${total} nhiệm vụ (còn ${total-completed}). Bản sửa là không bắt buộc.`:'Em đã nộp đủ nhiệm vụ – hãy làm phiếu cuối nhé!'}</p>`}</article>`}<p class="paneFoot">Mô hình 3D là học liệu tổng hợp do AI tạo. Phản hồi và điểm của AI chỉ để tham khảo; thầy cô quyết định đánh giá.</p></section></div>`;
- screen={name:progress.assessments.some(a=>a.phase==='sau')?'done':'task',taskId:t.id,state:(current||first)?.status==='pending'?'pending':(first&&!$('#submit'))||(first?.status==='done'&&version===2)?'feedback':'work',allDone:completed===total};helpRender();
+ screen={name:progress.assessments.some(a=>a.phase==='sau')?'done':'task',taskId:t.id,state:shown?'feedback':'work',allDone:completed===total};helpRender();
  document.querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.task;render();toTop();});document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.next;render();toTop();});
  $('#reload').onclick=e=>guarded(e.target,refresh);$('#end').onclick=()=>{if(busy)return;for(const t of cat.tasks)for(const v of [1,2])storage.remove('tc_draft_'+token+'_'+t.id+'_'+v);storage.remove('tc_learning_token');token=null;progress=null;taskId=cat.tasks[0].id;intro();notice('Đã kết thúc phiên trên thiết bị. Bài đã nộp vẫn được lưu cho giáo viên.');};
  const read=()=>{
@@ -209,20 +216,19 @@ function render(){
         JSON.stringify(body.nguon)===JSON.stringify(earlier.nguon||[]);
       if(same){fail('Bản sửa đang giống hệt bài đầu. Em thay đổi ít nhất một mục rồi nộp lại nhé.');return;}
     }
-    save();$('#saveStatus').className='muted';$('#saveStatus').textContent='Đang nộp bài và chờ AI nhận xét (khoảng 10 giây)…';
-    const result=await submitWithRetry({action:'submit_attempt',task:t.id,version,body});
-    if(!result.ok){
-      try{await refresh();}catch(_){}
-      notice('AI đang bận, chờ vài giây rồi bấm gửi lại');
-      return;
-    }
-    await refresh();
-    const response=result.data;
-    notice(response.message|| (response.pending?'Bài đang được chấm, chờ vài giây rồi tải lại trang.':'Đã nộp bài. Xem nhận xét bên dưới.'));
+    save();optimistic[t.id]={body,status:'pending'};render();
+    // Gửi bài chạy nền: em xem kết quả nhanh và có thể sang nhiệm vụ tiếp ngay, nhận xét AI hiện khi có.
+    (async()=>{
+     const result=await submitWithRetry({action:'submit_attempt',task:t.id,version,body});
+     try{progress=await api({action:'progress'});}catch(_){}
+     delete optimistic[t.id];
+     if(!result.ok&&!progress?.attempts.some(a=>a.task===t.id))optimistic[t.id]={body,status:'error'};
+     if(taskId===t.id||!document.querySelector('#reason'))render();else{const j=$('#journeyBar .journey');if(j)j.outerHTML=journey(taskId);}
+    })();
 
   });
  }
- for(const [id,a] of [['retryFirst',first],['retrySecond',second]])if($("#"+id))$("#"+id).onclick=e=>guarded(e.target,async()=>{const result=await submitWithRetry({action:'submit_attempt',task:t.id,version:a.version,body:a.body});if(result.ok){await refresh();}else{try{await refresh();}catch(_){}notice('AI đang bận, chờ vài giây rồi bấm gửi lại');}});
+ for(const [id,a] of [['retryFirst',shown],['retrySecond',second]])if(a&&$("#"+id))$("#"+id).onclick=e=>guarded(e.target,async()=>{const result=await submitWithRetry({action:'submit_attempt',task:t.id,version:1,body:a.body});if(result.ok){await refresh();}else{try{await refresh();}catch(_){}notice('AI đang bận, chờ vài giây rồi bấm gửi lại');}});
  if($('#solution'))$('#solution').onclick=e=>guarded(e.target,async()=>{const r=await api({action:'solution',task:t.id});$('#solutionText').textContent=r.answer;});
  if($('#post'))$('#post').onclick=()=>quiz('sau');
 

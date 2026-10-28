@@ -262,3 +262,11 @@ body.student main{padding-bottom:24px}
 body.student nav.journey{display:block;gap:0}
 body.student .journeyNow{margin:0 0 12px}
 body.student .submitBar{position:static;margin:20px 0 0;padding:0;background:none;border:0;border-radius:0}
+/* Kết quả nhanh và chờ AI */
+body.student .quick{display:grid;gap:6px;margin:6px 0 14px;padding:12px 14px;border-radius:12px;background:#fff;border:1px solid var(--line)}
+body.student .qk{margin:0;font-weight:700;font-size:15px}
+body.student .qk.ok{color:#1f7a45}body.student .qk.no{color:#a8472a}
+body.student .qkFix{margin:0 0 4px 22px;font-size:14px;color:var(--muted)}
+body.student .aiWait{display:flex;align-items:center;gap:10px;margin:14px 0 0;padding:12px 14px;border-radius:12px;background:var(--teal-soft);color:var(--teal);font-weight:600;font-size:14px}
+body.student .spin{width:16px;height:16px;border-radius:50%;border:2px solid #9cc5c9;border-top-color:var(--teal);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
