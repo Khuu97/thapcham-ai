@@ -110,6 +110,10 @@ function helpRender(){
  const p=$('#helpPanel');if(!p||p.hidden)return;
  const where={intro:'Màn hình vào lớp',quiz:screen.phase==='truoc'?'Phiếu đầu':'Phiếu cuối',done:'Đã hoàn thành',task:'Nhiệm vụ '+(cat.tasks.findIndex(t=>t.id===screen.taskId)+1)}[screen.name]||'';
  const ai=screen.name==='task'&&screen.state!=='pending';
+ // Chỉ dựng lại khi đổi màn hình; khi em đang chọn/gõ thì chỉ cập nhật dòng "việc cần làm" để không mất gợi ý AI.
+ const key=[screen.name,screen.phase,screen.taskId,screen.state,ai].join('|');
+ if(p.dataset.key===key&&p.querySelector('.helpNext p')){p.querySelector('.helpNext p').textContent=nextStepText();return;}
+ p.dataset.key=key;
  p.innerHTML=`<div class="helpHead"><b>Trợ giúp</b><button type="button" class="ghost helpClose" aria-label="Đóng trợ giúp">✕</button></div>
  <p class="helpWhere">Em đang ở: <b>${E(where)}</b></p>
  <div class="helpNext"><b>Việc cần làm bây giờ</b><p>${E(nextStepText())}</p></div>
