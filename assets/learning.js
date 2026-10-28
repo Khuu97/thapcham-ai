@@ -8,6 +8,14 @@ const ANSWER_OPTIONS = {
   N2: ['Chưa đủ căn cứ, vì chưa có số đo để so với tháp thật', 'Đúng, vì mô hình trông rất giống ảnh tháp Po Klong Garai', 'Sai, vì Po Klong Garai không phải là tháp Chăm'],
   N3: ['Không đồng ý, vì người Chăm tiếp nhận rồi biến đổi theo cách riêng', 'Đồng ý, vì người Chăm cũng theo Hindu giáo giống Ấn Độ', 'Không đồng ý, vì người Chăm không chịu ảnh hưởng Ấn Độ']
 };
+// Mỗi nhiệm vụ chỉ hiện 3–4 câu tư liệu chọn lọc: một câu chứng minh được kết luận, các câu còn lại có vẻ liên quan nhưng không đủ.
+const EVIDENCE={N1:[['S3',0],['S6',1],['S7',2],['S6',0]],N2:[['S8',0],['S3',0],['S3',1]],N3:[['S9',0],['S1',1],['S2',0],['S9',1]]};
+function evidenceFor(t){
+ const all=id=>{const source=cat.sources.find(s=>s.id===id);return source?splitSentences(source.text):[];};
+ const pick=EVIDENCE[t.id];
+ if(!pick)return t.sources.flatMap(id=>all(id).map((text,i)=>({id,text,key:id+'-'+i})));
+ return pick.map(([id,i])=>({id,text:all(id)[i],key:id+'-'+i})).filter(c=>c.text);
+}
 // Xáo trộn một lần cho mỗi người học/nhiệm vụ, giữ thứ tự khi lưu nháp hay tải lại trang.
 function shuffledOptions(taskId){
  const values=ANSWER_OPTIONS[taskId]||[];
@@ -142,7 +150,7 @@ function render(){
  const completed=cat.tasks.filter(t=>progress.attempts.some(a=>a.task===t.id&&a.status==='done')).length,total=cat.tasks.length,next=cat.tasks[cat.tasks.indexOf(t)+1];
  const version=first?.status==='done'?2:1;let draft={};try{draft=JSON.parse(storage.get('tc_draft_'+token+'_'+t.id+'_'+version)||'{}')}catch{}
  const current=second||null,base=Object.keys(draft).length?draft:(first?.body||{});
- const sentenceCards=t.sources.flatMap(id=>{const source=cat.sources.find(s=>s.id===id);return source?splitSentences(source.text).map((text,i)=>({id,text,key:id+'-'+i})):[];});
+ const sentenceCards=evidenceFor(t);
  const selectedAnswer=base.chon||base.ket_luan;
  const selectedEvidenceIndex=sentenceCards.findIndex(c=>c.text===base.bang_chung&&(base.nguon||[]).includes(c.id));
  bar(`<div class="learningTop">
