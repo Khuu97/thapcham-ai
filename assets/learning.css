@@ -142,3 +142,123 @@ main{padding-bottom:90px}
 #journeyBar:empty{display:none}
 #journeyBar{max-width:820px;margin:0 auto 12px}
 #journeyBar .learningTop{margin:0}
+
+/* ================= Giao diện học sinh v3 =================
+   Mô hình cố định bên trái, câu hỏi cuộn bên phải (màn hình rộng);
+   xếp chồng trên điện thoại. Chỉ áp dụng cho trang học sinh (body.student). */
+body.student{--brick:#a8472a;--brick-soft:#f7e9e3;--teal:#0b5560;--teal-soft:#e6f1f2;--ink:#18282c;--muted:#56676b;--line:#dbe3e4;--bg:#f5f3ef;
+ font-family:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink)}
+body.student button,body.student input,body.student textarea{font-family:inherit}
+body.student header{position:sticky;top:0;z-index:30;height:60px;padding:0 24px;background:#fff;border-bottom:1px solid var(--line)}
+body.student .brand{font-weight:800;letter-spacing:.18em;font-size:15px;color:var(--ink);display:flex;align-items:center;gap:10px}
+body.student .brand::before{content:"";width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--brick),#d07a4f);clip-path:polygon(50% 0,100% 100%,0 100%)}
+body.student .brand span{color:var(--brick)}
+body.student .headTag{font-size:13px;font-weight:600;color:var(--muted);padding:4px 12px;border:1px solid var(--line);border-radius:999px}
+body.student main{max-width:1400px;padding:24px}
+body.student .hero h1{letter-spacing:-.03em;font-weight:800}
+body.student .card{border-radius:16px;border:1px solid var(--line);box-shadow:0 1px 2px rgba(24,40,44,.04),0 6px 20px rgba(24,40,44,.04);padding:24px}
+body.student h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
+body.student button,body.student .button{border-radius:12px;font-weight:600}
+body.student button:not(.ghost):not(.tapOption):not(.evidenceCard):not(.helpFab):not(.helpClose){background:var(--teal)}
+body.student button:not(.ghost):not(.tapOption):not(.evidenceCard):not(.helpFab):not(.helpClose):hover{background:#083f47}
+
+/* Bố cục hai cột */
+body.student.withViewer .hero,body.student.withViewer>footer{display:none}
+body.student.withViewer main{max-width:none;padding:0}
+body.student.withViewer .workspace{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(400px,1fr);height:calc(100vh - 60px);height:calc(100dvh - 60px)}
+body.student.withViewer #viewer{margin:0;border:0;border-radius:0;display:flex;flex-direction:column;min-height:0;background:#071216}
+body.student.withViewer #viewer iframe{flex:1;height:auto;min-height:0}
+body.student.withViewer #viewer.mini iframe{display:block}
+body.student #viewer .viewerHead{background:#0a2f36;padding:10px 16px;align-items:center}
+body.student #viewer .viewerHead b{display:block;font-size:14px;font-weight:700}
+body.student #viewer .viewerHead small{display:block;color:#a9cfd3;font-size:12px}
+body.student.withViewer #viewerToggle{display:none}
+body.student.withViewer .pane{overflow-y:auto;overscroll-behavior:contain;padding:20px 24px 40px;background:var(--bg);border-left:1px solid var(--line)}
+body.student.withViewer .lessonContent{max-width:none}
+body.student.withViewer .layout{display:block}
+body.student:not(.withViewer) .pane{max-width:760px;margin:0 auto}
+@media(max-width:980px){
+ body.student.withViewer .workspace{display:block;height:auto}
+ body.student.withViewer #viewer{position:sticky;top:60px;z-index:20;height:42vh}
+ body.student.withViewer .pane{overflow:visible;border:0;padding:16px 14px 40px}
+}
+
+/* Thanh bước */
+body.student #journeyBar{max-width:none;margin:0 0 16px}
+body.student .learningTop{display:flex;align-items:flex-start;gap:10px;margin:0}
+body.student .journeyNow{font-size:13px;color:var(--muted);margin:0 0 10px}
+body.student .journeyNow b{color:var(--ink)}
+body.student .journey ol{gap:0;position:relative}
+body.student .journey li{flex:1}
+body.student .journey li::before{content:"";position:absolute;top:15px;left:-50%;width:100%;height:2px;background:var(--line);z-index:0}
+body.student .journey li:first-child::before{display:none}
+body.student .journey li.done::before,body.student .journey li.active::before{background:var(--teal)}
+body.student .journey li>button,body.student .journey li>div{position:relative;z-index:1;background:transparent!important;border:0!important;box-shadow:none!important;min-height:0;padding:0 2px;gap:6px;font-size:12px;font-weight:600;color:var(--muted)}
+body.student .journey li>button:hover i{box-shadow:0 0 0 4px var(--teal-soft)}
+body.student .journey i{width:32px;height:32px;font-size:13px;font-weight:700;background:#fff;border:2px solid var(--line);color:var(--muted)}
+body.student .journey li.done i{background:var(--teal);border-color:var(--teal);color:#fff}
+body.student .journey li.active i{background:#fff;border-color:var(--brick);color:var(--brick);box-shadow:0 0 0 4px var(--brick-soft)}
+body.student .journey li.active span{color:var(--ink);font-weight:700}
+body.student .journey li.done span{color:var(--teal)}
+body.student .moreMenu summary{height:38px;min-height:38px;min-width:38px;border:1px solid var(--line);border-radius:10px;font-size:18px}
+
+/* Thẻ nhiệm vụ */
+body.student .questionCard{background:#fff;border:1px solid var(--line);border-top:4px solid var(--brick);border-left:1px solid var(--line)}
+body.student .qMeta{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+body.student .qLabel{background:var(--brick-soft);color:var(--brick);letter-spacing:.06em;text-transform:uppercase;font-size:12px!important;margin:0}
+body.student .qKind{font-size:12px;font-weight:700;color:var(--teal);background:var(--teal-soft);padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.06em}
+body.student .questionCard h2{margin:0 0 8px}
+body.student .card p.qText{font-size:17px;font-weight:500;line-height:1.6;margin:0 0 16px}
+body.student ol.howTo{list-style:none;counter-reset:how;display:flex;flex-wrap:wrap;gap:6px 18px;margin:0;padding:12px 14px;background:var(--bg);border:0;border-radius:12px;font-weight:500;font-size:13px;color:var(--muted)}
+body.student ol.howTo li{counter-increment:how;display:flex;align-items:center;gap:6px}
+body.student ol.howTo li::before{content:counter(how);display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#fff;border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--ink)}
+
+/* Bài làm */
+body.student .answerCard{border:1px solid var(--line)}
+body.student .aLabel{background:var(--teal-soft);color:var(--teal);font-size:12px!important}
+body.student .stepHead{display:flex;align-items:center;gap:10px;margin:22px 0 10px;font-size:16px;font-weight:700;color:var(--ink)}
+body.student .stepHead b{display:grid;place-items:center;flex:0 0 26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;font-size:13px}
+body.student .stepHint{margin:-4px 0 8px 36px;color:var(--muted);font-size:14px}
+body.student .tapOptions{grid-template-columns:1fr;gap:8px;margin:0 0 6px}
+body.student .tapOption,body.student .evidenceCard{position:relative;display:block;min-height:0;padding:14px 16px 14px 48px;text-align:left;font-size:15px;font-weight:500;line-height:1.45;background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:12px;box-shadow:none}
+body.student .tapOption::before,body.student .evidenceCard::before{content:"";position:absolute;left:16px;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;border:2px solid #9fb1b4;background:#fff}
+body.student .tapOption:not(.pick):hover,body.student .evidenceCard:not(.pick):hover{border-color:#8fb5ba;background:#fbfdfd}
+body.student .tapOption.pick,body.student .evidenceCard.pick{background:var(--teal-soft);border-color:var(--teal);color:var(--ink);box-shadow:0 0 0 1px var(--teal)}
+body.student .tapOption.pick::before,body.student .evidenceCard.pick::before{content:"";border-color:var(--teal);background:var(--teal);box-shadow:inset 0 0 0 3px #fff}
+body.student .evidenceCards{gap:8px;margin:0 0 6px}
+body.student .evidenceCard small{display:inline-block;font-size:11px!important;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--brick);margin-bottom:4px}
+body.student .evidenceCard.pick small{color:var(--brick)}
+body.student .evidenceCard span{font-size:15px}
+body.student #reason{min-height:84px;max-height:180px;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px}
+body.student #reason:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft)}
+body.student .reasonMeta{font-size:13px;margin:6px 0 0}
+body.student #wordCount{font-weight:600;color:var(--muted)}body.student #wordCount.ok{color:#1f7a45}
+body.student .submitBar{position:sticky;bottom:0;margin:18px -24px -24px;padding:14px 24px 18px;background:linear-gradient(to bottom,rgba(255,255,255,.85),#fff 30%);border-top:1px solid var(--line);border-radius:0 0 16px 16px}
+body.student .submitBar button.wide{margin-top:0;min-height:52px;font-size:17px}
+body.student #saveStatus{margin:8px 0 0;font-size:13px}
+body.student .formError{color:#8a2b12!important;background:#fdecea;border:1px solid #f3c2b6;border-radius:10px;padding:10px 12px;font-weight:600;font-size:14px!important}
+body.student .needFix{animation:needFix 1.6s ease}
+@keyframes needFix{0%,60%{box-shadow:0 0 0 3px rgba(168,71,42,.45);border-radius:12px}100%{box-shadow:none}}
+body.student .feedback{border-radius:14px;background:#eef8f1;border:1px solid #b8dcc4}
+body.student .readonly{border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+body.student .nextTask.wide{margin-top:16px}
+body.student .paneFoot{font-size:12px!important;color:var(--muted);text-align:center;margin:18px 8px 0}
+body.student #notice:not(:empty){border-radius:12px;margin:0 0 14px}
+body.student fieldset{border-radius:14px;background:#fff;border:1px solid var(--line);padding:14px 18px}
+body.student fieldset label{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;margin:4px 0;font-weight:500}
+body.student fieldset label:hover{background:var(--bg)}
+body.student legend{font-weight:700}
+body.student .helpFab{background:var(--brick);color:#fff;box-shadow:0 8px 24px rgba(168,71,42,.35)}
+body.student .helpFab:hover{background:#8f3a21}
+body.student .helpPanel{border-color:var(--line);border-radius:16px}
+body.student .helpNext{background:var(--brick-soft);border-left-color:var(--brick)}
+body.student .helpNext p{font-size:14px}
+
+/* Nút trợ giúp nằm trên thanh đầu trang để không che nút Nộp bài */
+body.student .headTag{display:none}
+body.student .helpFab{top:11px;bottom:auto;right:20px;min-height:38px;height:38px;padding:0 16px;font-size:14px;box-shadow:none}
+body.student .helpPanel{top:66px;bottom:auto;right:20px;max-height:calc(100vh - 86px)}
+body.student main{padding-bottom:24px}
+body.student nav.journey{display:block;gap:0}
+body.student .journeyNow{margin:0 0 12px}
+body.student .submitBar{position:static;margin:20px 0 0;padding:0;background:none;border:0;border-radius:0}

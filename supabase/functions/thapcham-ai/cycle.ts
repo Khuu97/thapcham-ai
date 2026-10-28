@@ -12,7 +12,7 @@ export async function teacher(sql:any,req:any){
 }
 export async function cycle(req:any,sql:any,gemini:any,ip:string){
  const action=req.action;
- if(action==='catalog')return {ok:true,sources:SOURCES,tasks:TASKS.map(({answer,choice,...t})=>({...t,has_choice:choice!==null})),rubric:RUBRIC,quiz:Object.fromEntries(Object.entries(QUIZ).map(([phase,qs])=>[phase,qs.map(({answer,...q})=>q)])),version:'2026.10.22'};
+ if(action==='catalog')return {ok:true,sources:SOURCES,tasks:TASKS.map(({answer,choice,...t})=>({...t,has_choice:choice!==null})),rubric:RUBRIC,quiz:Object.fromEntries(Object.entries(QUIZ).map(([phase,qs])=>[phase,qs.map(({answer,...q})=>q)])),version:'2026.10.28'};
  if(action==='teacher_login'){
   await limit(sql,'teacher:'+ip,8);
   const [c]=await sql`select gia_tri from thapcham.cau_hinh where khoa='ma_giao_vien'`;

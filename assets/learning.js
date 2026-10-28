@@ -4,10 +4,18 @@ const cfg=window.THAPCHAM_CONFIG||{},headers={'Content-Type':'application/json',
 const storage={get(k){try{return localStorage.getItem(k)}catch{return null}},set(k,v){try{localStorage.setItem(k,v)}catch{}},remove(k){try{localStorage.removeItem(k)}catch{}}};
 
 const ANSWER_OPTIONS = {
-  Q1: ['Mái nằm phía trên thân, chóp là phần cao nhất', 'Mái và chóp giống hệt nhau, không phân biệt được', 'Chóp nằm dưới mái'],
-  Q3: ['Đúng', 'Sai', 'Chưa đủ căn cứ'],
-  Q5: ['Sai – người Chăm tiếp nhận và biến đổi ảnh hưởng Ấn Độ, không chỉ sao chép', 'Đúng – tháp Chăm chỉ là bản sao đền Ấn Độ', 'Không thể biết vì không có tư liệu']
+  N1: ['Thân tháp vươn cao, các tầng mái nhỏ dần lên trên, đỉnh có chóp', 'Mái cong như mái đình làng, các tầng to dần lên trên', 'Tháp hình tròn, mái bằng phẳng, không chia tầng mái'],
+  N2: ['Chưa đủ căn cứ, vì chưa có số đo để so với tháp thật', 'Đúng, vì mô hình trông rất giống ảnh tháp Po Klong Garai', 'Sai, vì Po Klong Garai không phải là tháp Chăm'],
+  N3: ['Không đồng ý, vì người Chăm tiếp nhận rồi biến đổi theo cách riêng', 'Đồng ý, vì người Chăm cũng theo Hindu giáo giống Ấn Độ', 'Không đồng ý, vì người Chăm không chịu ảnh hưởng Ấn Độ']
 };
+// Mỗi nhiệm vụ chỉ hiện 3–4 câu tư liệu chọn lọc: một câu chứng minh được kết luận, các câu còn lại có vẻ liên quan nhưng không đủ.
+const EVIDENCE={N1:[['S3',0],['S6',1],['S7',1],['S6',0]],N2:[['S8',0],['S3',0],['S3',1]],N3:[['S9',0],['S1',1],['S2',0],['S9',1]]};
+function evidenceFor(t){
+ const all=id=>{const source=cat.sources.find(s=>s.id===id);return source?splitSentences(source.text):[];};
+ const pick=EVIDENCE[t.id];
+ if(!pick)return t.sources.flatMap(id=>all(id).map((text,i)=>({id,text,key:id+'-'+i})));
+ return pick.map(([id,i])=>({id,text:all(id)[i],key:id+'-'+i})).filter(c=>c.text);
+}
 // Xáo trộn một lần cho mỗi người học/nhiệm vụ, giữ thứ tự khi lưu nháp hay tải lại trang.
 function shuffledOptions(taskId){
  const values=ANSWER_OPTIONS[taskId]||[];
@@ -31,6 +39,7 @@ function splitSentences(text){
  const tail=s.slice(from).trim();if(tail)result.push(tail);
  return result;
 }
+const wordsOf=text=>(String(text||'').toLocaleLowerCase('vi').match(/[\p{L}\p{N}]+/gu)||[]).length;
 function explanationOkay(text){
  const input=String(text||'').trim();
  const words=input.toLocaleLowerCase('vi').match(/[\p{L}\p{N}]+/gu)||[];
@@ -45,7 +54,7 @@ function explanationOkay(text){
  }
  return true;
 }
-let token=storage.get('tc_learning_token'),cat=null,progress=null,taskId='Q1',busy=false,teacherToken='',dashboard=null;
+let token=storage.get('tc_learning_token'),cat=null,progress=null,taskId='N1',busy=false,teacherToken='',dashboard=null;
 try{teacherToken=sessionStorage.getItem('tc_teacher_session')||''}catch{}
 const notice=s=>{$('#notice').textContent=s||'';};
 async function api(data){const r=await fetch(cfg.API_URL,{method:'POST',headers,signal:AbortSignal.timeout(60000),body:JSON.stringify({...data,learner_token:token,teacher_token:teacherToken})});let d;try{d=await r.json()}catch{throw Error('Máy chủ chưa trả lời. Bản nháp vẫn được giữ.')}if(!d.ok){if(d.code==='AUTH'){teacherToken='';try{sessionStorage.removeItem('tc_teacher_session')}catch{}}throw Error(d.error||'Chưa xử lí được.')}return d;}
@@ -77,7 +86,8 @@ function feedback(a){
  return `<div class="feedback"><div class="feedbackBrief"><div class="stars" role="img" aria-label="${score} trong 6 điểm tham khảo">${'★'.repeat(score)}${'☆'.repeat(6-score)}</div><b class="aLabel">AI NHẬN XÉT · ${score}/6</b></div><p><b>Làm tốt:</b> ${E(strength)}</p>${score===6?'<p><b>Xuất sắc!</b> Em đã chọn đúng và dùng bằng chứng hợp lí.</p>':`<p><b>Cần sửa:</b> ${E(improvement)}</p>`}${f.can_gv_xem?'<small>Giáo viên cần xem lại phản hồi này.</small>':''}</div>`;
 }
 function work(a){return `<p><b>Kết luận</b></p><div class="readonly">${E(a.body.ket_luan||a.body.chon)}</div><p><b>Bằng chứng</b></p><div class="readonly">${E(a.body.bang_chung)}<br>Nguồn: ${(a.body.nguon||[]).map(E).join(', ')}</div><p><b>Giải thích</b></p><div class="readonly">${E(a.body.giai_thich)}</div>`;}
-function viewer(on){const v=$('#viewer');if(!v)return;v.hidden=!on;if(on&&!v.querySelector('iframe')){v.innerHTML='<div class="viewerHead"><b>Mô hình 3D tháp Chăm</b><span><button class="ghost" id="viewerToggle">Thu gọn</button> <a href="index.html?embed=1" target="_blank" rel="noopener">Toàn màn hình ↗</a></span></div><iframe src="index.html?embed=1" title="Mô hình 3D tháp Chăm" loading="lazy" allow="fullscreen"></iframe>';$('#viewerToggle').onclick=e=>{v.classList.toggle('mini');e.target.textContent=v.classList.contains('mini')?'Mở mô hình':'Thu gọn';};}}
+function viewer(on){const v=$('#viewer');if(!v)return;v.hidden=!on;document.body.classList.toggle('withViewer',!!on);if(on&&!v.querySelector('iframe')){v.innerHTML='<div class="viewerHead"><div><b>Mô hình 3D tháp Chăm</b><small>Kéo để xoay · cuộn để phóng to · chạm vào bộ phận để xem</small></div><span><button class="ghost" id="viewerToggle">Thu gọn</button> <a href="index.html?embed=1" target="_blank" rel="noopener">Toàn màn hình ↗</a></span></div><iframe src="index.html?embed=1" title="Mô hình 3D tháp Chăm" loading="lazy" allow="fullscreen"></iframe>';$('#viewerToggle').onclick=e=>{v.classList.toggle('mini');e.target.textContent=v.classList.contains('mini')?'Mở mô hình':'Thu gọn';};}}
+const toTop=()=>{const p=$('#pane');if(p)p.scrollTo({top:0,behavior:'smooth'});scrollTo({top:0,behavior:'smooth'});};
 const bar=html=>{const j=$('#journeyBar');if(j)j.innerHTML=html||'';};
 function hero(on){const h=document.querySelector('.hero');if(h)h.hidden=!on;}
 // Lộ trình 5 bước để học sinh luôn biết mình đang ở đâu: Phiếu đầu → 3 nhiệm vụ → Phiếu cuối.
@@ -140,8 +150,8 @@ function render(){
  const completed=cat.tasks.filter(t=>progress.attempts.some(a=>a.task===t.id&&a.status==='done')).length,total=cat.tasks.length,next=cat.tasks[cat.tasks.indexOf(t)+1];
  const version=first?.status==='done'?2:1;let draft={};try{draft=JSON.parse(storage.get('tc_draft_'+token+'_'+t.id+'_'+version)||'{}')}catch{}
  const current=second||null,base=Object.keys(draft).length?draft:(first?.body||{});
- const sentenceCards=t.sources.flatMap(id=>{const source=cat.sources.find(s=>s.id===id);return source?splitSentences(source.text).map((text,i)=>({id,text,key:id+'-'+i})):[];});
- const selectedAnswer=t.id==='Q3'?(base.chon||String(base.ket_luan||'').replace(/^Nhận định này /,'')):base.ket_luan;
+ const sentenceCards=evidenceFor(t);
+ const selectedAnswer=base.chon||base.ket_luan;
  const selectedEvidenceIndex=sentenceCards.findIndex(c=>c.text===base.bang_chung&&(base.nguon||[]).includes(c.id));
  bar(`<div class="learningTop">
  ${journey(taskId)}
@@ -153,48 +163,53 @@ function render(){
  </details>
 </div>`);
  $('#app').innerHTML=`<div class="layout"><section class="lessonContent">
- <article class="card questionCard"><span class="qLabel">CÂU HỎI ${cat.tasks.indexOf(t)+1}/${total} · ${E(t.kind)}</span><h2>${E(t.title)}</h2><p class="qText">${E(t.prompt)}</p><p class="howTo">Cách làm: xoay, phóng to mô hình ở trên để quan sát → ① chọn kết luận → ② chạm một câu tư liệu → ③ viết một câu giải thích → Nộp bài.</p></article>
+ <article class="card questionCard"><div class="qMeta"><span class="qLabel">Nhiệm vụ ${cat.tasks.indexOf(t)+1}/${total}</span><span class="qKind">${E(t.kind)}</span></div><h2>${E(t.title)}</h2><p class="qText">${E(t.prompt)}</p><ol class="howTo" aria-label="Cách làm"><li>Quan sát mô hình 3D</li><li>Chọn kết luận</li><li>Chọn một câu tư liệu</li><li>Viết một câu giải thích</li></ol></article>
  ${first?`<article class="card answerCard"><span class="aLabel">BÀI EM ĐÃ NỘP</span>${work(first)}${feedback(first)}${first.status!=='done'?'<button id="retryFirst" class="ghost">Thử lại</button>':''}</article>`:''}
  ${current?`<article class="card answerCard"><span class="aLabel">BÀI EM ĐÃ SỬA</span>${work(current)}${feedback(current)}${current.status!=='done'?'<button id="retrySecond" class="ghost">Thử lại</button>':''}${next?`<button class="nextTask wide" data-next="${next.id}">Sang câu hỏi tiếp →</button>`:''}</article>`:`<article class="card answerCard"><span class="aLabel">${version===1?'BÀI LÀM CỦA EM':'SỬA BÀI (KHÔNG BẮT BUỘC)'}</span>${version===2&&next?`<button class="ghost nextTask" data-next="${next.id}">Không sửa, sang câu hỏi tiếp →</button>`:''}
- <h4>① Chọn kết luận đúng</h4>
+ <h4 class="stepHead"><b>1</b>Chọn kết luận em thấy đúng</h4>
  <div class="tapOptions" id="answerOptions">${shuffledOptions(t.id).map(value=>`<button type="button" class="tapOption ${selectedAnswer===value?'pick':''}" data-answer="${E(value)}" aria-pressed="${selectedAnswer===value}">${E(value)}</button>`).join('')}</div>
- <h4>② Chạm vào câu tư liệu làm bằng chứng</h4>
+ <h4 class="stepHead"><b>2</b>Chọn một câu tư liệu làm bằng chứng</h4>
  <div class="evidenceCards" id="evidenceCards">${sentenceCards.map((c,i)=>`<button type="button" class="evidenceCard ${selectedEvidenceIndex===i?'pick':''}" data-evidence-index="${i}" aria-pressed="${selectedEvidenceIndex===i}"><small>${E(c.id)} · ${E(cat.sources.find(s=>s.id===c.id)?.title||'Tư liệu')}</small><span>${E(c.text)}</span></button>`).join('')}</div>
- <label for="reason"><b>③ Viết 1 câu giải thích</b></label><textarea id="reason" rows="2" maxlength="300" placeholder="Vì tư liệu cho thấy…">${E(String(base.giai_thich||'').slice(0,300))}</textarea><div class="reasonMeta"><span>Ít nhất 6 chữ.</span><span id="reasonCount">${String(base.giai_thich||'').slice(0,300).length}/300</span></div>
- <button id="submit" class="wide" ${first?.status==='pending'?'disabled':''}>${version===1?'Nộp bài':'Nộp bản sửa'}</button><p id="saveStatus" class="muted" aria-live="polite"></p></article>`}
- ${completed<total&&!progress.assessments.some(a=>a.phase==='sau')?'':`<article class="card completionCard">${completed===total?`<div class="detectiveBadge" role="status"><span class="medal">🏅</span><div><strong>THÁM TỬ SỬ LIỆU</strong><p>Em đã nộp đủ ba nhiệm vụ. Xem lại phản hồi rồi làm phiếu cuối.</p></div></div>`:''}<h3>Hoàn thành hoạt động</h3>${progress.assessments.some(a=>a.phase==='sau')?`<p>Phiếu đầu vào: <b>${progress.assessments.find(a=>a.phase==='truoc').score}/3</b> · Phiếu cuối: <b>${progress.assessments.find(a=>a.phase==='sau').score}/3</b></p><p class="muted">Hai phiếu ngắn chỉ phản ánh một phần kết quả; cần giáo viên đối chiếu bài làm.</p>`:`<button id="post" class="wide" ${completed<total?'disabled':''}>Làm phiếu cuối hoạt động</button><p class="muted">${completed<total?`Mở sau khi nộp đủ ${total} nhiệm vụ (còn ${total-completed}). Bản sửa là không bắt buộc.`:'Em đã nộp đủ nhiệm vụ – hãy làm phiếu cuối nhé!'}</p>`}</article>`}</section></div>`;
+ <label for="reason" class="stepHead"><b>3</b>Viết một câu giải thích</label><p class="stepHint">Vì sao câu tư liệu em chọn chứng minh được kết luận?</p><textarea id="reason" rows="3" maxlength="300" placeholder="Vì tư liệu cho thấy…">${E(String(base.giai_thich||'').slice(0,300))}</textarea><div class="reasonMeta"><span id="wordCount"></span><span id="reasonCount">${String(base.giai_thich||'').slice(0,300).length}/300</span></div>
+ <div class="submitBar"><button id="submit" class="wide" ${first?.status==='pending'?'disabled':''}>${version===1?'Nộp bài':'Nộp bản sửa'}</button><p id="saveStatus" class="muted" aria-live="polite"></p></div></article>`}
+ ${completed<total&&!progress.assessments.some(a=>a.phase==='sau')?'':`<article class="card completionCard">${completed===total?`<div class="detectiveBadge" role="status"><span class="medal">🏅</span><div><strong>THÁM TỬ SỬ LIỆU</strong><p>Em đã nộp đủ ba nhiệm vụ. Xem lại phản hồi rồi làm phiếu cuối.</p></div></div>`:''}<h3>Hoàn thành hoạt động</h3>${progress.assessments.some(a=>a.phase==='sau')?`<p>Phiếu đầu vào: <b>${progress.assessments.find(a=>a.phase==='truoc').score}/3</b> · Phiếu cuối: <b>${progress.assessments.find(a=>a.phase==='sau').score}/3</b></p><p class="muted">Hai phiếu ngắn chỉ phản ánh một phần kết quả; cần giáo viên đối chiếu bài làm.</p>`:`<button id="post" class="wide" ${completed<total?'disabled':''}>Làm phiếu cuối hoạt động</button><p class="muted">${completed<total?`Mở sau khi nộp đủ ${total} nhiệm vụ (còn ${total-completed}). Bản sửa là không bắt buộc.`:'Em đã nộp đủ nhiệm vụ – hãy làm phiếu cuối nhé!'}</p>`}</article>`}<p class="paneFoot">Mô hình 3D là học liệu tổng hợp do AI tạo. Phản hồi và điểm của AI chỉ để tham khảo; thầy cô quyết định đánh giá.</p></section></div>`;
  screen={name:progress.assessments.some(a=>a.phase==='sau')?'done':'task',taskId:t.id,state:(current||first)?.status==='pending'?'pending':(first&&!$('#submit'))||(first?.status==='done'&&version===2)?'feedback':'work',allDone:completed===total};helpRender();
- document.querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.task;render();});document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.next;render();scrollTo({top:0,behavior:'smooth'});});
- $('#reload').onclick=e=>guarded(e.target,refresh);$('#end').onclick=()=>{if(busy)return;for(const t of cat.tasks)for(const v of [1,2])storage.remove('tc_draft_'+token+'_'+t.id+'_'+v);storage.remove('tc_learning_token');token=null;progress=null;taskId='Q1';intro();notice('Đã kết thúc phiên trên thiết bị. Bài đã nộp vẫn được lưu cho giáo viên.');};
+ document.querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.task;render();toTop();});document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.next;render();toTop();});
+ $('#reload').onclick=e=>guarded(e.target,refresh);$('#end').onclick=()=>{if(busy)return;for(const t of cat.tasks)for(const v of [1,2])storage.remove('tc_draft_'+token+'_'+t.id+'_'+v);storage.remove('tc_learning_token');token=null;progress=null;taskId=cat.tasks[0].id;intro();notice('Đã kết thúc phiên trên thiết bị. Bài đã nộp vẫn được lưu cho giáo viên.');};
  const read=()=>{
   const chosen=document.querySelector('#answerOptions .tapOption.pick')?.dataset.answer||'';
   const selected=document.querySelector('#evidenceCards .evidenceCard.pick');
   const index=selected?Number(selected.dataset.evidenceIndex):-1;
   const evidence=sentenceCards[index];
-  return {ket_luan:t.id==='Q3'&&chosen?'Nhận định này '+chosen:chosen,chon:t.id==='Q3'?chosen:'',bang_chung:evidence?.text||'',nguon:evidence?[evidence.id]:[],giai_thich:($('#reason')?.value||'').trim().slice(0,300)};
+  return {ket_luan:chosen,chon:chosen,bang_chung:evidence?.text||'',nguon:evidence?[evidence.id]:[],giai_thich:($('#reason')?.value||'').trim().slice(0,300)};
  };
  if($('#submit')){
-  const save=()=>{storage.set('tc_draft_'+token+'_'+t.id+'_'+version,JSON.stringify(read()));$('#saveStatus').textContent='Đã giữ bản nháp trên thiết bị.';};
+  const save=()=>{storage.set('tc_draft_'+token+'_'+t.id+'_'+version,JSON.stringify(read()));$('#saveStatus').className='muted';$('#saveStatus').textContent='Đã lưu nháp trên thiết bị.';};
+  // Báo lỗi ngay dưới nút Nộp để em thấy, kèm đưa tới đúng mục cần sửa.
+  const fail=(msg,target)=>{const st=$('#saveStatus');st.className='formError';st.textContent=msg;notice('');if(target){target.scrollIntoView({behavior:'smooth',block:'center'});target.classList.add('needFix');setTimeout(()=>target.classList.remove('needFix'),1800);}};
   function selectOne(container,selector,button){
    container.querySelectorAll(selector).forEach(b=>{const active=b===button;b.classList.toggle('pick',active);b.setAttribute('aria-pressed',String(active));});
    save();helpRender();
   }
   document.querySelectorAll('#answerOptions .tapOption').forEach(b=>b.addEventListener('click',()=>selectOne($('#answerOptions'),'.tapOption',b)));
   document.querySelectorAll('#evidenceCards .evidenceCard').forEach(b=>b.addEventListener('click',()=>selectOne($('#evidenceCards'),'.evidenceCard',b)));
-  $('#reason').addEventListener('input',()=>{$('#reasonCount').textContent=$('#reason').value.length+'/300';save();helpRender();});
+  const count=()=>{const n=wordsOf($('#reason').value);$('#wordCount').textContent=n>=6?`✓ ${n} chữ`:`${n}/6 chữ tối thiểu`;$('#wordCount').className=n>=6?'ok':'';};count();
+  $('#reason').addEventListener('input',()=>{$('#reasonCount').textContent=$('#reason').value.length+'/300';count();save();helpRender();});
   $('#submit').onclick=e=>guarded(e.target,async()=>{
     const body=read();
-    if(!body.ket_luan){notice('Em hãy chọn một kết luận.');return;}
-    if(!body.bang_chung||!body.nguon.length){notice('Em hãy chọn một câu tư liệu làm bằng chứng.');return;}
-    if(!explanationOkay(body.giai_thich)){notice('Viết rõ hơn một chút nhé');return;}
+    if(!body.ket_luan){fail('Em chưa chọn kết luận ở mục 1.',$('#answerOptions'));return;}
+    if(!body.bang_chung||!body.nguon.length){fail('Em chưa chọn câu tư liệu ở mục 2.',$('#evidenceCards'));return;}
+    const n=wordsOf(body.giai_thich);
+    if(n<6){fail(`Câu giải thích cần ít nhất 6 chữ (em đang có ${n} chữ).`,$('#reason'));return;}
+    if(!explanationOkay(body.giai_thich)){fail('Câu giải thích chưa rõ nghĩa. Em viết thành một câu đầy đủ, có dấu tiếng Việt nhé.',$('#reason'));return;}
     if(version===2&&first){
       const normal=s=>String(s||'').trim().replace(/\s+/g,' ');
       const earlier=first.body||{};
       const same=['ket_luan','chon','bang_chung','giai_thich'].every(key=>normal(body[key])===normal(earlier[key])) &&
         JSON.stringify(body.nguon)===JSON.stringify(earlier.nguon||[]);
-      if(same){notice('Em chưa sửa gì');return;}
+      if(same){fail('Bản sửa đang giống hệt bài đầu. Em thay đổi ít nhất một mục rồi nộp lại nhé.');return;}
     }
-    save();notice('Đang lưu bài và xin phản hồi AI…');
+    save();$('#saveStatus').className='muted';$('#saveStatus').textContent='Đang nộp bài và chờ AI nhận xét (khoảng 10 giây)…';
     const result=await submitWithRetry({action:'submit_attempt',task:t.id,version,body});
     if(!result.ok){
       try{await refresh();}catch(_){}
@@ -218,7 +233,7 @@ function teacherLogin(){hero(false);bar('');
  $('#login').onclick=e=>guarded(e.target,async()=>{const r=await api({action:'teacher_login',ma_gv:$('#teacherCode').value});teacherToken=r.token;try{sessionStorage.setItem('tc_teacher_session',teacherToken)}catch{}await teacherLoad();});
 }
 async function teacherLoad(lop=''){dashboard=await api({action:'learning_dashboard',lop});teacherRender(lop);}
-const CORRECT={Q1:b=>b.ket_luan===ANSWER_OPTIONS.Q1[0],Q3:b=>['Chưa đủ căn cứ','Sai'].includes(b.chon),Q5:b=>b.ket_luan===ANSWER_OPTIONS.Q5[0]};
+const CORRECT={N1:b=>(b.chon||b.ket_luan)===ANSWER_OPTIONS.N1[0],N2:b=>['Chưa đủ căn cứ, vì chưa có số đo để so với tháp thật'].includes(b.chon||b.ket_luan),N3:b=>(b.chon||b.ket_luan)===ANSWER_OPTIONS.N3[0]};
 function summary(){
  const real=a=>!/^TEST/i.test(a.lop||'');
  const att=dashboard.attempts.filter(real),asm=dashboard.assessments.filter(real);
@@ -241,5 +256,5 @@ function teacherRender(lop){hero(false);bar('');
  document.querySelectorAll('.review').forEach(f=>f.onsubmit=e=>{e.preventDefault();guarded(f.querySelector('button'),async()=>{await api({action:'teacher_review',attempt_id:f.dataset.id,scores:[0,1,2].map(i=>Number(f.elements['s'+i].value)),note:f.elements.note.value});await teacherLoad(lop);notice('Đã lưu đánh giá của giáo viên; giữ nguyên phản hồi AI và lịch sử đánh giá.');});});
  $('#export').onclick=()=>{const quote=x=>'"'+String(x??'').replace(/^[=+@-]/,"'$&").replace(/"/g,'""')+'"';const rows=[['Thời gian','Mã phiên','Lớp','Nhiệm vụ','Phiên bản','Kết luận','Bằng chứng','Giải thích','Nguồn','Điểm AI','Điểm GV','Nhận xét GV'],...dashboard.attempts.map(a=>[new Date(a.created_at).toLocaleString('vi-VN'),a.code,a.lop,a.task,a.version,a.body.ket_luan,a.body.bang_chung,a.body.giai_thich,(a.body.nguon||[]).join('; '),a.feedback?.tong,a.review?.scores.reduce((x,y)=>x+y,0),a.review?.note])];const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='ThapChamAI_MinhChung.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 }
-(async()=>{try{cat=await api({action:'catalog'});if(new URLSearchParams(location.search).has('teacher')){if(teacherToken){try{await teacherLoad()}catch{teacherLogin()}}else teacherLogin();}else if((helpInit(),token)){try{await refresh()}catch{intro();notice('Chưa khôi phục được phiên. Kiểm tra kết nối rồi tải lại trang.')}}else intro();}catch(e){$('#app').innerHTML='<section class="card"><h2>Chưa kết nối được phòng học</h2><p>Bản nháp đã lưu trên thiết bị vẫn được giữ. Em có thể tiếp tục quan sát mô hình.</p><a class="button" href="index.html">Khám phá 3D</a><button class="ghost" onclick="location.reload()">Thử lại</button></section>';notice(e.message);}})();
+(async()=>{try{cat=await api({action:'catalog'});taskId=cat.tasks[0]?.id||taskId;if(new URLSearchParams(location.search).has('teacher')){if(teacherToken){try{await teacherLoad()}catch{teacherLogin()}}else teacherLogin();}else if((document.body.classList.add('student'),helpInit(),token)){try{await refresh()}catch{intro();notice('Chưa khôi phục được phiên. Kiểm tra kết nối rồi tải lại trang.')}}else intro();}catch(e){$('#app').innerHTML='<section class="card"><h2>Chưa kết nối được phòng học</h2><p>Bản nháp đã lưu trên thiết bị vẫn được giữ. Em có thể tiếp tục quan sát mô hình.</p><a class="button" href="index.html">Khám phá 3D</a><button class="ghost" onclick="location.reload()">Thử lại</button></section>';notice(e.message);}})();
 })();
