@@ -77,15 +77,57 @@ function feedback(a){
  return `<div class="feedback"><div class="feedbackBrief"><div class="stars" role="img" aria-label="${score} trong 6 điểm tham khảo">${'★'.repeat(score)}${'☆'.repeat(6-score)}</div><b class="aLabel">AI NHẬN XÉT · ${score}/6</b></div><p><b>Làm tốt:</b> ${E(strength)}</p>${score===6?'<p><b>Xuất sắc!</b> Em đã chọn đúng và dùng bằng chứng hợp lí.</p>':`<p><b>Cần sửa:</b> ${E(improvement)}</p>`}${f.can_gv_xem?'<small>Giáo viên cần xem lại phản hồi này.</small>':''}</div>`;
 }
 function work(a){return `<p><b>Kết luận</b></p><div class="readonly">${E(a.body.ket_luan||a.body.chon)}</div><p><b>Bằng chứng</b></p><div class="readonly">${E(a.body.bang_chung)}<br>Nguồn: ${(a.body.nguon||[]).map(E).join(', ')}</div><p><b>Giải thích</b></p><div class="readonly">${E(a.body.giai_thich)}</div>`;}
-function viewer(on){const v=$('#viewer');if(!v)return;v.hidden=!on;if(on&&!v.querySelector('iframe')){v.innerHTML='<div class="viewerHead"><b>Mô hình 3D tháp Chăm</b><span><button class="ghost" id="viewerToggle">Thu gọn</button> <a href="index.html" target="_blank" rel="noopener">Toàn màn hình ↗</a></span></div><iframe src="index.html?embed=1" title="Mô hình 3D tháp Chăm" loading="lazy" allow="fullscreen"></iframe>';$('#viewerToggle').onclick=e=>{v.classList.toggle('mini');e.target.textContent=v.classList.contains('mini')?'Mở mô hình':'Thu gọn';};}}
+function viewer(on){const v=$('#viewer');if(!v)return;v.hidden=!on;if(on&&!v.querySelector('iframe')){v.innerHTML='<div class="viewerHead"><b>Mô hình 3D tháp Chăm</b><span><button class="ghost" id="viewerToggle">Thu gọn</button> <a href="index.html?embed=1" target="_blank" rel="noopener">Toàn màn hình ↗</a></span></div><iframe src="index.html?embed=1" title="Mô hình 3D tháp Chăm" loading="lazy" allow="fullscreen"></iframe>';$('#viewerToggle').onclick=e=>{v.classList.toggle('mini');e.target.textContent=v.classList.contains('mini')?'Mở mô hình':'Thu gọn';};}}
 function hero(on){const h=document.querySelector('.hero');if(h)h.hidden=!on;}
+// Lộ trình 5 bước để học sinh luôn biết mình đang ở đâu: Phiếu đầu → 3 nhiệm vụ → Phiếu cuối.
+let screen={name:'intro',taskId:null};
+function journey(active){
+ const has=p=>progress.assessments.some(a=>a.phase===p);
+ const taskDone=id=>progress.attempts.some(a=>a.task===id&&a.status==='done');
+ const steps=[{key:'truoc',label:'Phiếu đầu',done:has('truoc')},...cat.tasks.map((t,i)=>({key:t.id,label:'Nhiệm vụ '+(i+1),done:taskDone(t.id),task:t.id})),{key:'sau',label:'Phiếu cuối',done:has('sau')}];
+ const idx=Math.max(0,steps.findIndex(s=>s.key===active));
+ return `<nav class="journey" aria-label="Lộ trình học"><p class="journeyNow">Bước ${idx+1}/${steps.length}: <b>${E(steps[idx].label)}</b></p><ol>${steps.map((s,i)=>{const cls=`${s.key===active?'active':''} ${s.done?'done':''}`;const inner=`<i aria-hidden="true">${s.done?'✓':i+1}</i><span>${E(s.label)}</span>`;return `<li class="${cls}">${s.task&&has('truoc')?`<button type="button" data-task="${E(s.task)}" aria-current="${s.key===active?'step':'false'}">${inner}</button>`:`<div aria-current="${s.key===active?'step':'false'}">${inner}</div>`}</li>`;}).join('')}</ol></nav>`;
+}
+// Nút "Cần giúp?" luôn ở góc màn hình: nói em đang ở đâu, việc tiếp theo, và (ở nhiệm vụ) xin AI gợi ý – không đưa đáp án.
+function nextStepText(){
+ if(screen.name==='intro')return 'Gõ tên lớp của em (ví dụ 10A1), đánh dấu ô "Em đồng ý", rồi bấm "Vào học".';
+ if(screen.name==='quiz')return screen.phase==='truoc'?'Trả lời 3 câu bằng hiểu biết của em, chưa cần mô hình hay trợ lý. Chọn đủ 3 câu rồi bấm "Nộp phiếu".':'Trả lời 3 câu của phiếu cuối, rồi bấm "Nộp phiếu" để hoàn thành.';
+ if(screen.name==='done')return 'Em đã hoàn thành. Có thể xem lại bài và nhận xét ở từng nhiệm vụ trên thanh lộ trình.';
+ if(screen.name!=='task')return '';
+ if(screen.state==='pending')return 'Bài đang được AI xem. Chờ vài giây, nếu lâu quá thì bấm "Thử lại".';
+ if(screen.state==='feedback')return screen.allDone?'Đọc nhận xét. Em đã nộp đủ 3 nhiệm vụ, kéo xuống cuối trang và bấm "Làm phiếu cuối".':'Đọc nhận xét màu xanh. Em có thể sửa bài một lần, hoặc bấm "Sang câu hỏi tiếp".';
+ if(!document.querySelector('#answerOptions .tapOption.pick'))return 'Xoay, phóng to mô hình ở trên để quan sát. Sau đó ở mục ① bấm chọn một kết luận.';
+ if(!document.querySelector('#evidenceCards .evidenceCard.pick'))return 'Ở mục ②, bấm chọn MỘT câu tư liệu giúp chứng minh kết luận em đã chọn.';
+ if(!explanationOkay($('#reason')?.value))return 'Ở mục ③, viết một câu (ít nhất 6 chữ) nói vì sao câu tư liệu đó chứng minh kết luận. Có thể bắt đầu: "Vì tư liệu cho thấy…".';
+ return 'Em đã làm đủ ba mục. Bấm nút "Nộp bài" để nhận nhận xét của AI.';
+}
+function helpInit(){
+ if($('#helpFab'))return;
+ document.body.insertAdjacentHTML('beforeend',`<button type="button" id="helpFab" class="helpFab" aria-expanded="false" aria-controls="helpPanel">🙋 Cần giúp?</button><aside id="helpPanel" class="helpPanel" hidden aria-label="Trợ giúp"></aside>`);
+ $('#helpFab').onclick=()=>{const p=$('#helpPanel'),open=p.hidden;p.hidden=!open;$('#helpFab').setAttribute('aria-expanded',String(open));if(open)helpRender();};
+}
+function helpRender(){
+ const p=$('#helpPanel');if(!p||p.hidden)return;
+ const where={intro:'Màn hình vào lớp',quiz:screen.phase==='truoc'?'Phiếu đầu':'Phiếu cuối',done:'Đã hoàn thành',task:'Nhiệm vụ '+(cat.tasks.findIndex(t=>t.id===screen.taskId)+1)}[screen.name]||'';
+ const ai=screen.name==='task'&&screen.state!=='pending';
+ p.innerHTML=`<div class="helpHead"><b>Trợ giúp</b><button type="button" class="ghost helpClose" aria-label="Đóng trợ giúp">✕</button></div>
+ <p class="helpWhere">Em đang ở: <b>${E(where)}</b></p>
+ <div class="helpNext"><b>Việc cần làm bây giờ</b><p>${E(nextStepText())}</p></div>
+ ${ai?`<div class="helpAi"><b>Hỏi trợ lý AI về câu này</b><p class="muted">Trợ lý chỉ gợi ý hướng suy nghĩ, không cho đáp án.</p><button type="button" id="hintGo" class="wide">💡 Gợi ý cho em</button><label for="hintAsk" class="muted">Hoặc gõ câu hỏi của em</label><textarea id="hintAsk" rows="2" maxlength="300" placeholder="Ví dụ: Câu tư liệu nào nói về hồ sơ đo đạc?"></textarea><button type="button" id="hintSend" class="ghost">Gửi câu hỏi</button><div id="hintOut" aria-live="polite"></div></div>`:screen.name==='quiz'?'<p class="muted">Phiếu này em tự làm, không dùng trợ lý AI.</p>':''}`;
+ p.querySelector('.helpClose').onclick=()=>{p.hidden=true;$('#helpFab').setAttribute('aria-expanded','false');$('#helpFab').focus();};
+ if(!ai)return;
+ const ask=async(btn,question)=>{if(btn.disabled)return;btn.disabled=true;const out=$('#hintOut');out.className='hintOut';out.textContent='Trợ lý đang suy nghĩ…';try{const r=await api({action:'hint',task:screen.taskId,question});out.textContent=r.hint;}catch(e){out.className='hintOut error';out.textContent=e.name==='TimeoutError'?'Trợ lý phản hồi chậm, em thử lại sau ít giây.':e.message;}finally{btn.disabled=false;}};
+ $('#hintGo').onclick=e=>ask(e.target,'Em nên làm bước tiếp theo thế nào? Gợi ý giúp em, đừng cho đáp án.');
+ $('#hintSend').onclick=e=>{const q=$('#hintAsk').value.trim();if(q.length<3){$('#hintOut').className='hintOut error';$('#hintOut').textContent='Em gõ câu hỏi rõ hơn một chút nhé.';return;}ask(e.target,q);};
+}
 function intro(){
- viewer(false);hero(true);
+ viewer(false);hero(true);screen={name:'intro'};
  $('#app').innerHTML=`<section class="card narrow"><h2>Vào phòng học</h2><p>3 nhiệm vụ ngắn • khoảng 15 phút</p><label for="class">Lớp của em</label><input id="class" maxlength="12" placeholder="Ví dụ: 10A1" autocomplete="off"><p class="muted">Không cần họ tên. Bài làm được lưu để thầy cô xem và được AI nhận xét.</p><label class="consent"><input id="consent" type="checkbox">Em đồng ý và làm theo hướng dẫn của thầy cô.</label><button id="start" class="wide">Vào học →</button></section>`;
+ helpRender();
  $('#start').onclick=e=>guarded(e.target,async()=>{const classCode=$('#class').value.replace(/\s+/g,'').toLocaleUpperCase('vi');$('#class').value=classCode;if(!$('#consent').checked||!classCode)throw Error('Em nhập lớp và đánh dấu ô đồng ý nhé.');if(!token)token=crypto.randomUUID();storage.set('tc_learning_token',token);progress=await api({action:'enroll',lop:classCode,consent:true});render();});
 }
 async function refresh(){progress=await api({action:'progress'});render();}
-function quiz(phase){viewer(false);hero(false);const questions=cat.quiz[phase];$('#app').innerHTML=`<section class="card narrow"><p class="eyebrow">${phase==='truoc'?'TRƯỚC KHI KHÁM PHÁ':'SAU KHI HOÀN THÀNH'}</p><h2>Phiếu ${phase==='truoc'?'đầu vào':'cuối hoạt động'}</h2><p>Tự trả lời, chưa dùng trợ lý AI. Mỗi phiếu chỉ nộp một lần.</p>${questions.map((q,i)=>`<fieldset><legend>${i+1}. ${E(q.q)}</legend>${q.options.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}">${E(o)}</label>`).join('')}</fieldset>`).join('')}<button id="quizSubmit">Nộp phiếu</button></section>`;$('#quizSubmit').onclick=e=>guarded(e.target,async()=>{const answers=questions.map((_,i)=>document.querySelector(`input[name=q${i}]:checked`)?.value);if(answers.some(x=>x===undefined))throw Error('Hãy trả lời đủ các câu.');await api({action:'assessment',phase,answers:answers.map(Number)});await refresh();});}
+function quiz(phase){viewer(false);hero(false);screen={name:'quiz',phase};const questions=cat.quiz[phase];$('#app').innerHTML=`${journey(phase)}<section class="card narrow"><p class="eyebrow">${phase==='truoc'?'TRƯỚC KHI KHÁM PHÁ':'SAU KHI HOÀN THÀNH'}</p><h2>Phiếu ${phase==='truoc'?'đầu vào':'cuối hoạt động'}</h2><p>Tự trả lời, chưa dùng trợ lý AI. Mỗi phiếu chỉ nộp một lần.</p>${questions.map((q,i)=>`<fieldset><legend>${i+1}. ${E(q.q)}</legend>${q.options.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}">${E(o)}</label>`).join('')}</fieldset>`).join('')}<button id="quizSubmit">Nộp phiếu</button></section>`;$('#quizSubmit').onclick=e=>guarded(e.target,async()=>{const answers=questions.map((_,i)=>document.querySelector(`input[name=q${i}]:checked`)?.value);if(answers.some(x=>x===undefined))throw Error('Hãy trả lời đủ các câu.');await api({action:'assessment',phase,answers:answers.map(Number)});await refresh();});helpRender();}
 function render(){
  if(!progress.assessments.some(a=>a.phase==='truoc'))return quiz('truoc');
  viewer(true);hero(false);
@@ -97,9 +139,7 @@ function render(){
  const selectedAnswer=t.id==='Q3'?(base.chon||String(base.ket_luan||'').replace(/^Nhận định này /,'')):base.ket_luan;
  const selectedEvidenceIndex=sentenceCards.findIndex(c=>c.text===base.bang_chung&&(base.nguon||[]).includes(c.id));
  $('#app').innerHTML=`<div class="learningTop">
- <nav class="taskProgress" role="group" aria-label="Tiến độ ba nhiệm vụ">
-  ${cat.tasks.map((q,i)=>`<button type="button" data-task="${E(q.id)}" class="progressDot ${q.id===taskId?'active':''} ${progress.attempts.some(a=>a.task===q.id&&a.status==='done')?'done':''}" aria-label="Nhiệm vụ ${i+1}: ${E(q.title)}" aria-current="${q.id===taskId?'step':'false'}" title="${E(q.title)}"><span aria-hidden="true"></span></button>`).join('')}
- </nav>
+ ${journey(taskId)}
  <details class="moreMenu"><summary aria-label="Tùy chọn phiên học" title="Tùy chọn phiên học">⋯</summary>
   <div class="morePanel"><p class="sessionLabel">${E(progress.learner.lop)} · ${E(progress.learner.code)}</p>
    <button type="button" id="reload" class="ghost">Tải lại tiến độ</button>
@@ -108,7 +148,7 @@ function render(){
  </details>
 </div>
 <div class="layout"><section class="lessonContent">
- <article class="card questionCard"><span class="qLabel">CÂU HỎI ${cat.tasks.indexOf(t)+1}/${total} · ${E(t.kind)}</span><h2>${E(t.title)}</h2><p class="qText">${E(t.prompt)}</p><p class="muted">Xoay, phóng to mô hình 3D phía trên để quan sát.</p></article>
+ <article class="card questionCard"><span class="qLabel">CÂU HỎI ${cat.tasks.indexOf(t)+1}/${total} · ${E(t.kind)}</span><h2>${E(t.title)}</h2><p class="qText">${E(t.prompt)}</p><p class="howTo">Cách làm: xoay, phóng to mô hình ở trên để quan sát → ① chọn kết luận → ② chạm một câu tư liệu → ③ viết một câu giải thích → Nộp bài.</p></article>
  ${first?`<article class="card answerCard"><span class="aLabel">BÀI EM ĐÃ NỘP</span>${work(first)}${feedback(first)}${first.status!=='done'?'<button id="retryFirst" class="ghost">Thử lại</button>':''}</article>`:''}
  ${current?`<article class="card answerCard"><span class="aLabel">BÀI EM ĐÃ SỬA</span>${work(current)}${feedback(current)}${current.status!=='done'?'<button id="retrySecond" class="ghost">Thử lại</button>':''}${next?`<button class="nextTask wide" data-next="${next.id}">Sang câu hỏi tiếp →</button>`:''}</article>`:`<article class="card answerCard"><span class="aLabel">${version===1?'BÀI LÀM CỦA EM':'SỬA BÀI (KHÔNG BẮT BUỘC)'}</span>${version===2&&next?`<button class="ghost nextTask" data-next="${next.id}">Không sửa, sang câu hỏi tiếp →</button>`:''}
  <h4>① Chọn kết luận đúng</h4>
@@ -118,6 +158,7 @@ function render(){
  <label for="reason"><b>③ Viết 1 câu giải thích</b></label><textarea id="reason" rows="2" maxlength="300" placeholder="Vì tư liệu cho thấy…">${E(String(base.giai_thich||'').slice(0,300))}</textarea><div class="reasonMeta"><span>Ít nhất 6 chữ.</span><span id="reasonCount">${String(base.giai_thich||'').slice(0,300).length}/300</span></div>
  <button id="submit" class="wide" ${first?.status==='pending'?'disabled':''}>${version===1?'Nộp bài':'Nộp bản sửa'}</button><p id="saveStatus" class="muted" aria-live="polite"></p></article>`}
  ${completed<total&&!progress.assessments.some(a=>a.phase==='sau')?'':`<article class="card completionCard">${completed===total?`<div class="detectiveBadge" role="status"><span class="medal">🏅</span><div><strong>THÁM TỬ SỬ LIỆU</strong><p>Em đã nộp đủ ba nhiệm vụ. Xem lại phản hồi rồi làm phiếu cuối.</p></div></div>`:''}<h3>Hoàn thành hoạt động</h3>${progress.assessments.some(a=>a.phase==='sau')?`<p>Phiếu đầu vào: <b>${progress.assessments.find(a=>a.phase==='truoc').score}/3</b> · Phiếu cuối: <b>${progress.assessments.find(a=>a.phase==='sau').score}/3</b></p><p class="muted">Hai phiếu ngắn chỉ phản ánh một phần kết quả; cần giáo viên đối chiếu bài làm.</p>`:`<button id="post" class="wide" ${completed<total?'disabled':''}>Làm phiếu cuối hoạt động</button><p class="muted">${completed<total?`Mở sau khi nộp đủ ${total} nhiệm vụ (còn ${total-completed}). Bản sửa là không bắt buộc.`:'Em đã nộp đủ nhiệm vụ – hãy làm phiếu cuối nhé!'}</p>`}</article>`}</section></div>`;
+ screen={name:progress.assessments.some(a=>a.phase==='sau')?'done':'task',taskId:t.id,state:(current||first)?.status==='pending'?'pending':(first&&!$('#submit'))||(first?.status==='done'&&version===2)?'feedback':'work',allDone:completed===total};helpRender();
  document.querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.task;render();});document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>{if(busy)return;taskId=b.dataset.next;render();scrollTo({top:0,behavior:'smooth'});});
  $('#reload').onclick=e=>guarded(e.target,refresh);$('#end').onclick=()=>{if(busy)return;for(const t of cat.tasks)for(const v of [1,2])storage.remove('tc_draft_'+token+'_'+t.id+'_'+v);storage.remove('tc_learning_token');token=null;progress=null;taskId='Q1';intro();notice('Đã kết thúc phiên trên thiết bị. Bài đã nộp vẫn được lưu cho giáo viên.');};
  const read=()=>{
@@ -131,11 +172,11 @@ function render(){
   const save=()=>{storage.set('tc_draft_'+token+'_'+t.id+'_'+version,JSON.stringify(read()));$('#saveStatus').textContent='Đã giữ bản nháp trên thiết bị.';};
   function selectOne(container,selector,button){
    container.querySelectorAll(selector).forEach(b=>{const active=b===button;b.classList.toggle('pick',active);b.setAttribute('aria-pressed',String(active));});
-   save();
+   save();helpRender();
   }
   document.querySelectorAll('#answerOptions .tapOption').forEach(b=>b.addEventListener('click',()=>selectOne($('#answerOptions'),'.tapOption',b)));
   document.querySelectorAll('#evidenceCards .evidenceCard').forEach(b=>b.addEventListener('click',()=>selectOne($('#evidenceCards'),'.evidenceCard',b)));
-  $('#reason').addEventListener('input',()=>{$('#reasonCount').textContent=$('#reason').value.length+'/300';save();});
+  $('#reason').addEventListener('input',()=>{$('#reasonCount').textContent=$('#reason').value.length+'/300';save();helpRender();});
   $('#submit').onclick=e=>guarded(e.target,async()=>{
     const body=read();
     if(!body.ket_luan){notice('Em hãy chọn một kết luận.');return;}
@@ -195,5 +236,5 @@ function teacherRender(lop){hero(false);
  document.querySelectorAll('.review').forEach(f=>f.onsubmit=e=>{e.preventDefault();guarded(f.querySelector('button'),async()=>{await api({action:'teacher_review',attempt_id:f.dataset.id,scores:[0,1,2].map(i=>Number(f.elements['s'+i].value)),note:f.elements.note.value});await teacherLoad(lop);notice('Đã lưu đánh giá của giáo viên; giữ nguyên phản hồi AI và lịch sử đánh giá.');});});
  $('#export').onclick=()=>{const quote=x=>'"'+String(x??'').replace(/^[=+@-]/,"'$&").replace(/"/g,'""')+'"';const rows=[['Thời gian','Mã phiên','Lớp','Nhiệm vụ','Phiên bản','Kết luận','Bằng chứng','Giải thích','Nguồn','Điểm AI','Điểm GV','Nhận xét GV'],...dashboard.attempts.map(a=>[new Date(a.created_at).toLocaleString('vi-VN'),a.code,a.lop,a.task,a.version,a.body.ket_luan,a.body.bang_chung,a.body.giai_thich,(a.body.nguon||[]).join('; '),a.feedback?.tong,a.review?.scores.reduce((x,y)=>x+y,0),a.review?.note])];const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='ThapChamAI_MinhChung.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 }
-(async()=>{try{cat=await api({action:'catalog'});if(new URLSearchParams(location.search).has('teacher')){if(teacherToken){try{await teacherLoad()}catch{teacherLogin()}}else teacherLogin();}else if(token){try{await refresh()}catch{intro();notice('Chưa khôi phục được phiên. Kiểm tra kết nối rồi tải lại trang.')}}else intro();}catch(e){$('#app').innerHTML='<section class="card"><h2>Chưa kết nối được phòng học</h2><p>Bản nháp đã lưu trên thiết bị vẫn được giữ. Em có thể tiếp tục quan sát mô hình.</p><a class="button" href="index.html">Khám phá 3D</a><button class="ghost" onclick="location.reload()">Thử lại</button></section>';notice(e.message);}})();
+(async()=>{try{cat=await api({action:'catalog'});if(new URLSearchParams(location.search).has('teacher')){if(teacherToken){try{await teacherLoad()}catch{teacherLogin()}}else teacherLogin();}else if((helpInit(),token)){try{await refresh()}catch{intro();notice('Chưa khôi phục được phiên. Kiểm tra kết nối rồi tải lại trang.')}}else intro();}catch(e){$('#app').innerHTML='<section class="card"><h2>Chưa kết nối được phòng học</h2><p>Bản nháp đã lưu trên thiết bị vẫn được giữ. Em có thể tiếp tục quan sát mô hình.</p><a class="button" href="index.html">Khám phá 3D</a><button class="ghost" onclick="location.reload()">Thử lại</button></section>';notice(e.message);}})();
 })();

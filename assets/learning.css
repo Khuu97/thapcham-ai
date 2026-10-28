@@ -104,3 +104,38 @@ footer{color:var(--muted)}
 .feedback .aLabel{font-size:13px}
 legend{padding:0 8px;font-weight:700;color:#13303a}
 .tapOption,.evidenceCard{transition:none}
+
+/* Lộ trình 5 bước */
+.journey{flex:1;min-width:0}
+.journeyNow{margin:0 0 8px;color:#13303a}
+.journey ol{list-style:none;display:flex;gap:6px;margin:0;padding:0;counter-reset:none}
+.journey li{flex:1;min-width:0;position:relative}
+.journey li>button,.journey li>div{width:100%;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;border-radius:12px;background:#fff;border:2px solid #c9d8dc;color:#4a636b;font-weight:700;font-size:14px;line-height:1.2;text-align:center}
+.journey li>button{cursor:pointer}
+.journey li>button:hover{border-color:#0d6c76;background:#f2f9fa}
+.journey i{font-style:normal;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#c9d8dc;color:#13303a;font-size:13px}
+.journey li.done>*{border-color:#1f8a4c;color:#1f6b3d}.journey li.done i{background:#1f8a4c;color:#fff}
+.journey li.active>*{border-color:#0d6c76;background:#e3f2f4;color:#13303a;box-shadow:0 0 0 3px rgba(13,108,118,.18)}.journey li.active i{background:#0d6c76;color:#fff}
+@media(max-width:600px){.journey li span{font-size:11px}.journey li>button,.journey li>div{min-height:48px;padding:4px 2px}}
+.learningTop{align-items:flex-start}
+.howTo{background:#fff;border:1px dashed #d99a00;border-radius:10px;padding:10px 12px;font-weight:600;margin:12px 0 0}
+.headTag{font-weight:700;color:#4a636b;font-size:15px}
+footer a{color:#0d6c76}
+/* Trợ giúp */
+.helpFab{position:fixed;right:16px;bottom:16px;z-index:40;border-radius:999px;padding:0 20px;min-height:52px;box-shadow:0 8px 24px rgba(13,108,118,.35);background:#d99a00;color:#1d1400}
+.helpFab:hover{background:#c28900}
+.helpPanel{position:fixed;right:16px;bottom:80px;z-index:40;width:min(380px,calc(100vw - 32px));max-height:calc(100vh - 110px);overflow:auto;background:#fff;border:2px solid #0d6c76;border-radius:16px;box-shadow:0 18px 48px rgba(0,0,0,.22);padding:14px 16px;display:grid;gap:10px}
+.helpPanel[hidden]{display:none}
+.helpHead{display:flex;justify-content:space-between;align-items:center}
+.helpHead b{font-size:18px}
+.helpClose{min-height:40px;min-width:40px;padding:0}
+.helpWhere{margin:0}
+.helpNext{background:#fff7dc;border-left:5px solid #d99a00;border-radius:8px;padding:8px 12px}
+.helpNext p{margin:4px 0 0}
+.helpAi{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.helpAi p{margin:0}
+.helpAi button.wide{margin-top:0}
+.hintOut{background:#e9f7ee;border:2px solid #8fcca5;border-radius:10px;padding:10px 12px;white-space:pre-wrap}
+.hintOut.error{background:#fff3d6;border-color:#d99a00}
+#hintOut:empty{display:none}
+main{padding-bottom:90px}
