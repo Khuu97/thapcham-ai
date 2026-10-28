@@ -1,0 +1,29 @@
+name: Đưa app lên Firebase (thapcham3d.web.app)
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: firebase
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kiểm tra đã có khóa Firebase
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "::error::Chưa có secret FIREBASE_SERVICE_ACCOUNT trong Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: thapcham3d
+          channelId: live
