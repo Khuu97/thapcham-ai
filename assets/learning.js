@@ -78,6 +78,7 @@ function feedback(a){
 }
 function work(a){return `<p><b>Kết luận</b></p><div class="readonly">${E(a.body.ket_luan||a.body.chon)}</div><p><b>Bằng chứng</b></p><div class="readonly">${E(a.body.bang_chung)}<br>Nguồn: ${(a.body.nguon||[]).map(E).join(', ')}</div><p><b>Giải thích</b></p><div class="readonly">${E(a.body.giai_thich)}</div>`;}
 function viewer(on){const v=$('#viewer');if(!v)return;v.hidden=!on;if(on&&!v.querySelector('iframe')){v.innerHTML='<div class="viewerHead"><b>Mô hình 3D tháp Chăm</b><span><button class="ghost" id="viewerToggle">Thu gọn</button> <a href="index.html?embed=1" target="_blank" rel="noopener">Toàn màn hình ↗</a></span></div><iframe src="index.html?embed=1" title="Mô hình 3D tháp Chăm" loading="lazy" allow="fullscreen"></iframe>';$('#viewerToggle').onclick=e=>{v.classList.toggle('mini');e.target.textContent=v.classList.contains('mini')?'Mở mô hình':'Thu gọn';};}}
+const bar=html=>{const j=$('#journeyBar');if(j)j.innerHTML=html||'';};
 function hero(on){const h=document.querySelector('.hero');if(h)h.hidden=!on;}
 // Lộ trình 5 bước để học sinh luôn biết mình đang ở đâu: Phiếu đầu → 3 nhiệm vụ → Phiếu cuối.
 let screen={name:'intro',taskId:null};
@@ -125,13 +126,13 @@ function helpRender(){
  $('#hintSend').onclick=e=>{const q=$('#hintAsk').value.trim();if(q.length<3){$('#hintOut').className='hintOut error';$('#hintOut').textContent='Em gõ câu hỏi rõ hơn một chút nhé.';return;}ask(e.target,q);};
 }
 function intro(){
- viewer(false);hero(true);screen={name:'intro'};
+ viewer(false);hero(true);bar('');screen={name:'intro'};
  $('#app').innerHTML=`<section class="card narrow"><h2>Vào phòng học</h2><p>3 nhiệm vụ ngắn • khoảng 15 phút</p><label for="class">Lớp của em</label><input id="class" maxlength="12" placeholder="Ví dụ: 10A1" autocomplete="off"><p class="muted">Không cần họ tên. Bài làm được lưu để thầy cô xem và được AI nhận xét.</p><label class="consent"><input id="consent" type="checkbox">Em đồng ý và làm theo hướng dẫn của thầy cô.</label><button id="start" class="wide">Vào học →</button></section>`;
  helpRender();
  $('#start').onclick=e=>guarded(e.target,async()=>{const classCode=$('#class').value.replace(/\s+/g,'').toLocaleUpperCase('vi');$('#class').value=classCode;if(!$('#consent').checked||!classCode)throw Error('Em nhập lớp và đánh dấu ô đồng ý nhé.');if(!token)token=crypto.randomUUID();storage.set('tc_learning_token',token);progress=await api({action:'enroll',lop:classCode,consent:true});render();});
 }
 async function refresh(){progress=await api({action:'progress'});render();}
-function quiz(phase){viewer(false);hero(false);screen={name:'quiz',phase};const questions=cat.quiz[phase];$('#app').innerHTML=`${journey(phase)}<section class="card narrow"><p class="eyebrow">${phase==='truoc'?'TRƯỚC KHI KHÁM PHÁ':'SAU KHI HOÀN THÀNH'}</p><h2>Phiếu ${phase==='truoc'?'đầu vào':'cuối hoạt động'}</h2><p>Tự trả lời, chưa dùng trợ lý AI. Mỗi phiếu chỉ nộp một lần.</p>${questions.map((q,i)=>`<fieldset><legend>${i+1}. ${E(q.q)}</legend>${q.options.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}">${E(o)}</label>`).join('')}</fieldset>`).join('')}<button id="quizSubmit">Nộp phiếu</button></section>`;$('#quizSubmit').onclick=e=>guarded(e.target,async()=>{const answers=questions.map((_,i)=>document.querySelector(`input[name=q${i}]:checked`)?.value);if(answers.some(x=>x===undefined))throw Error('Hãy trả lời đủ các câu.');await api({action:'assessment',phase,answers:answers.map(Number)});await refresh();});helpRender();}
+function quiz(phase){viewer(false);hero(false);screen={name:'quiz',phase};const questions=cat.quiz[phase];bar(`<div class="learningTop">${journey(phase)}</div>`);$('#app').innerHTML=`<section class="card narrow"><p class="eyebrow">${phase==='truoc'?'TRƯỚC KHI KHÁM PHÁ':'SAU KHI HOÀN THÀNH'}</p><h2>Phiếu ${phase==='truoc'?'đầu vào':'cuối hoạt động'}</h2><p>Tự trả lời, chưa dùng trợ lý AI. Mỗi phiếu chỉ nộp một lần.</p>${questions.map((q,i)=>`<fieldset><legend>${i+1}. ${E(q.q)}</legend>${q.options.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}">${E(o)}</label>`).join('')}</fieldset>`).join('')}<button id="quizSubmit">Nộp phiếu</button></section>`;$('#quizSubmit').onclick=e=>guarded(e.target,async()=>{const answers=questions.map((_,i)=>document.querySelector(`input[name=q${i}]:checked`)?.value);if(answers.some(x=>x===undefined))throw Error('Hãy trả lời đủ các câu.');await api({action:'assessment',phase,answers:answers.map(Number)});await refresh();});helpRender();}
 function render(){
  if(!progress.assessments.some(a=>a.phase==='truoc'))return quiz('truoc');
  viewer(true);hero(false);
@@ -142,7 +143,7 @@ function render(){
  const sentenceCards=t.sources.flatMap(id=>{const source=cat.sources.find(s=>s.id===id);return source?splitSentences(source.text).map((text,i)=>({id,text,key:id+'-'+i})):[];});
  const selectedAnswer=t.id==='Q3'?(base.chon||String(base.ket_luan||'').replace(/^Nhận định này /,'')):base.ket_luan;
  const selectedEvidenceIndex=sentenceCards.findIndex(c=>c.text===base.bang_chung&&(base.nguon||[]).includes(c.id));
- $('#app').innerHTML=`<div class="learningTop">
+ bar(`<div class="learningTop">
  ${journey(taskId)}
  <details class="moreMenu"><summary aria-label="Tùy chọn phiên học" title="Tùy chọn phiên học">⋯</summary>
   <div class="morePanel"><p class="sessionLabel">${E(progress.learner.lop)} · ${E(progress.learner.code)}</p>
@@ -150,8 +151,8 @@ function render(){
    <button type="button" id="end" class="ghost">Kết thúc trên thiết bị</button>
   </div>
  </details>
-</div>
-<div class="layout"><section class="lessonContent">
+</div>`);
+ $('#app').innerHTML=`<div class="layout"><section class="lessonContent">
  <article class="card questionCard"><span class="qLabel">CÂU HỎI ${cat.tasks.indexOf(t)+1}/${total} · ${E(t.kind)}</span><h2>${E(t.title)}</h2><p class="qText">${E(t.prompt)}</p><p class="howTo">Cách làm: xoay, phóng to mô hình ở trên để quan sát → ① chọn kết luận → ② chạm một câu tư liệu → ③ viết một câu giải thích → Nộp bài.</p></article>
  ${first?`<article class="card answerCard"><span class="aLabel">BÀI EM ĐÃ NỘP</span>${work(first)}${feedback(first)}${first.status!=='done'?'<button id="retryFirst" class="ghost">Thử lại</button>':''}</article>`:''}
  ${current?`<article class="card answerCard"><span class="aLabel">BÀI EM ĐÃ SỬA</span>${work(current)}${feedback(current)}${current.status!=='done'?'<button id="retrySecond" class="ghost">Thử lại</button>':''}${next?`<button class="nextTask wide" data-next="${next.id}">Sang câu hỏi tiếp →</button>`:''}</article>`:`<article class="card answerCard"><span class="aLabel">${version===1?'BÀI LÀM CỦA EM':'SỬA BÀI (KHÔNG BẮT BUỘC)'}</span>${version===2&&next?`<button class="ghost nextTask" data-next="${next.id}">Không sửa, sang câu hỏi tiếp →</button>`:''}
@@ -211,7 +212,7 @@ function render(){
  if($('#post'))$('#post').onclick=()=>quiz('sau');
 
 }
-function teacherLogin(){hero(false);
+function teacherLogin(){hero(false);bar('');
  viewer(false);
  $('#app').innerHTML='<section class="card narrow"><h2>Không gian giáo viên</h2><p>Xem bài trước–sau, phản hồi AI và ghi đánh giá của giáo viên.</p><label for="teacherCode">Mã giáo viên của dự án mới</label><input id="teacherCode" type="password" autocomplete="off"><button id="login" style="margin-top:16px">Đăng nhập</button><p class="muted">Phiên có thời hạn một giờ, chỉ lưu trong tab. Không chia sẻ mã với học sinh.</p></section>';
  $('#login').onclick=e=>guarded(e.target,async()=>{const r=await api({action:'teacher_login',ma_gv:$('#teacherCode').value});teacherToken=r.token;try{sessionStorage.setItem('tc_teacher_session',teacherToken)}catch{}await teacherLoad();});
@@ -230,7 +231,7 @@ function summary(){
   return `<tr><td><b>${E(lop)}</b></td><td>${new Set([...A.map(a=>a.code),...asm.filter(a=>a.lop===lop).map(a=>a.code)]).size}</td><td>${first.length}</td><td>${per}</td><td>${avg(pre)} (${pre.length}) → ${avg(post)} (${post.length})</td></tr>`;}).join('');
  return `<section class="card"><h3>Tổng hợp theo lớp</h3><p class="muted">Đã bỏ các lớp thử nghiệm có tên bắt đầu bằng TEST. “Đúng” = tỉ lệ chọn đúng kết luận ở bài nộp lần đầu.</p><div class="scroll"><table><thead><tr><th>Lớp</th><th>Số học sinh</th><th>Bài nộp</th><th>Điểm AI TB · chọn đúng</th><th>Phiếu đầu → cuối (/3)</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Chưa có dữ liệu.</td></tr>'}</tbody></table></div></section>`;
 }
-function teacherRender(lop){hero(false);
+function teacherRender(lop){hero(false);bar('');
  const groups=new Map();for(const a of dashboard.attempts){const key=a.code+'|'+a.task;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(a);}
  const paired=[...groups.values()].filter(g=>g.some(a=>a.version===1)&&g.some(a=>a.version===2));
  const needs=dashboard.attempts.filter(a=>a.status!=='done'||a.feedback?.can_gv_xem).length;
