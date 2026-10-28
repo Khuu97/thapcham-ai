@@ -9,7 +9,7 @@ const ANSWER_OPTIONS = {
   N3: ['Không đồng ý, vì người Chăm tiếp nhận rồi biến đổi theo cách riêng', 'Đồng ý, vì người Chăm cũng theo Hindu giáo giống Ấn Độ', 'Không đồng ý, vì người Chăm không chịu ảnh hưởng Ấn Độ']
 };
 // Mỗi nhiệm vụ chỉ hiện 3–4 câu tư liệu chọn lọc: một câu chứng minh được kết luận, các câu còn lại có vẻ liên quan nhưng không đủ.
-const EVIDENCE={N1:[['S3',0],['S6',1],['S7',2],['S6',0]],N2:[['S8',0],['S3',0],['S3',1]],N3:[['S9',0],['S1',1],['S2',0],['S9',1]]};
+const EVIDENCE={N1:[['S3',0],['S6',1],['S7',1],['S6',0]],N2:[['S8',0],['S3',0],['S3',1]],N3:[['S9',0],['S1',1],['S2',0],['S9',1]]};
 function evidenceFor(t){
  const all=id=>{const source=cat.sources.find(s=>s.id===id);return source?splitSentences(source.text):[];};
  const pick=EVIDENCE[t.id];
