@@ -63,7 +63,7 @@ input[type=range]{width:100%;accent-color:#69eff8}.rangeHead{display:flex;justif
 </style>
 <link rel="stylesheet" href="chat.css" />
 <script>if(/[?&]embed=1/.test(location.search))document.documentElement.classList.add("embed")</script>
-<style>.embed .roomLink,.embed .leftPanel,.embed #aiFab,.embed #aiPanel,.embed .hint,.embed .brand,.embed #btnFull,.embed #btnReset,.embed #btnGridMode,.embed #btnTexture,.embed #btnHolo,.embed #btnAuto,.embed #btnHistory{display:none!important}.embed #btnExplodeEmbed.active{background:#69eff8;color:#03222a}.embed .topbar{top:8px;left:8px;right:8px;justify-content:flex-end}.embed .info{top:56px;max-height:calc(100% - 64px)}body:has(#aiPanel.show) .roomLink,body:has(#info.show) .roomLink,body:has(#historyModal.show) .roomLink,body:has(#diagramModal.show) .roomLink{display:none!important}</style>
+<style>.embed .roomLink,.embed .leftPanel,.embed #aiFab,.embed #aiPanel,.embed .hint,.embed .brand,.embed #btnFull{display:none!important}.embed .quick{flex-wrap:wrap;justify-content:flex-end;gap:6px}.embed .embedExplode{position:absolute;left:12px;bottom:12px;z-index:6;display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:rgba(6,22,28,.78);border:1px solid rgba(105,239,248,.25);color:#cfeff2;font:600 12px system-ui;backdrop-filter:blur(6px)}.embed .embedExplode input{width:150px;accent-color:#69eff8}.embed .topbar{top:8px;left:8px;right:8px;justify-content:flex-end}.embed .info{top:56px;max-height:calc(100% - 64px)}body:has(#aiPanel.show) .roomLink,body:has(#info.show) .roomLink,body:has(#historyModal.show) .roomLink,body:has(#diagramModal.show) .roomLink{display:none!important}</style>
 <script src="lib/three.min.js"></script>
 <script>window.THREE||document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>')</script>
 <script src="lib/OrbitControls.js"></script>
@@ -1996,12 +1996,14 @@ btnGridMode.onclick=()=>{displayMode='grid';applyDisplayMode();};
 document.getElementById('btnAuto').onclick=(e)=>{controls.autoRotate=!controls.autoRotate;e.currentTarget.classList.toggle('active',controls.autoRotate);};
 document.getElementById('btnWire').onclick=(e)=>{wireframe=!wireframe;e.currentTarget.textContent=wireframe?'Bật':'Tắt';e.currentTarget.classList.toggle('active',wireframe);applyDisplayMode();};
 document.getElementById('explodeRange').oninput=(e)=>updateExplosion(+e.target.value/100);
-// Phòng học nhúng mô hình (?embed=1): chỉ giữ thao tác cần thiết – xoay, chạm bộ phận, tách/ghép bộ phận, sơ đồ.
+// Phòng học nhúng mô hình (?embed=1): giữ đủ chế độ hiển thị; thêm thanh kéo tách bộ phận ở góc dưới.
 if(document.documentElement.classList.contains('embed')){
-  const quick=document.querySelector('.quick'),btn=document.createElement('button');
-  btn.id='btnExplodeEmbed';btn.type='button';btn.textContent='Tách bộ phận';
-  btn.onclick=()=>{const range=document.getElementById('explodeRange'),on=+range.value<1;range.value=on?15:0;updateExplosion(on?.15:0);btn.textContent=on?'Ghép lại':'Tách bộ phận';btn.classList.toggle('active',on);};
-  if(quick)quick.prepend(btn);
+  const box=document.createElement('label');box.className='embedExplode';
+  box.innerHTML='<span>Ghép lại</span><input type="range" min="0" max="100" value="0" aria-label="Tách bộ phận"><span>Tách bộ phận</span>';
+  const slider=box.querySelector('input'),range=document.getElementById('explodeRange');
+  slider.oninput=()=>{range.value=slider.value;updateExplosion(+slider.value/100);};
+  range.addEventListener('input',()=>{slider.value=range.value;});
+  document.body.appendChild(box);
 }
 document.getElementById('btnReset').onclick=()=>setView('front');
 document.getElementById('btnFull').onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.();};
